@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Dto;
 using Microsoft.Extensions.Logging;
@@ -40,13 +41,23 @@ public class DemoMetadataAnnotator
     /// Mutates a single item's DTO in place, if it's a movie.
     /// </summary>
     /// <param name="dto">The item to annotate.</param>
+    /// <param name="authInfo">The resolved caller for this request - proves the filter can tell requests apart, ahead of any real per-user locale lookup.</param>
+    /// <param name="acceptLanguage">The request's raw Accept-Language header value, if any - a candidate locale signal that needs no Jellyfin-specific API.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task AnnotateAsync(BaseItemDto dto)
+    public async Task AnnotateAsync(BaseItemDto dto, AuthorizationInfo authInfo, string acceptLanguage)
     {
         if (dto.Type != BaseItemKind.Movie)
         {
             return;
         }
+
+        _logger.LogInformation(
+            "Polyfin demo: annotating {Name} for user {UserId} on client {Client}/{Device}, Accept-Language={AcceptLanguage}",
+            dto.Name,
+            authInfo.UserId,
+            authInfo.Client,
+            authInfo.Device,
+            acceptLanguage);
 
         dto.Name = $"[Polyfin] {dto.Name}";
 
