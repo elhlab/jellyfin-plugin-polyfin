@@ -21,6 +21,7 @@ Plugin integrates directly into jellyfin modifying responses
 
 - Series metadata
 - User selectable locale
+- Better test coverage
 - Explore spoofing default audio track based on user locale
 
 ### Known issues and problems
