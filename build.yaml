@@ -1,16 +1,18 @@
 ---
-name: "Template"
-guid: "eb5d7894-8eef-4b36-aa6f-5d124e828ce1"
+name: "Polyfin"
+guid: "b8c970d4-41d3-4dec-9c37-b37536f36f77"
 version: "1.0.0.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
-overview: "Short description about your plugin"
+overview: "Per-user metadata language across your libraries"
 description: >
-  This is a longer description that can span more than one
-  line and include details about your plugin.
+  Shows movie and show metadata in each viewer's own language, instead of
+  one language for the whole library. Works by intercepting Jellyfin's item
+  responses and fetching metadata in that language from the providers
+  already configured in your library (TMDb, TVDb, etc).
 category: "General"
-owner: "jellyfin"
+owner: "elhlab"
 artifacts:
-- "Jellyfin.Plugin.Template.dll"
+- "Jellyfin.Plugin.Polyfin.dll"
 changelog: >
   changelog
