@@ -16,4 +16,9 @@
     "jellyfinLinuxDataDir": "$HOME/.local/share/jellyfin",
     // The name of the plugin
     "pluginName": "Jellyfin.Plugin.Polyfin",
+
+    "[csharp]": {
+        "editor.defaultFormatter": "ms-dotnettools.csharp",
+        "editor.formatOnSave": true
+    }
 }
