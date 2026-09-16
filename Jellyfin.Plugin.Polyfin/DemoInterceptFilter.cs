@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Entities.Movies;
@@ -39,6 +40,12 @@ public class DemoInterceptFilter : IAsyncResultFilter
     /// <inheritdoc />
     public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
     {
+        // Called by ASP.NET Core itself, once per request, after Jellyfin's
+        // controller builds context.Result but before it's serialized to JSON.
+        // Registered globally (PluginServiceRegistrator), so this runs for every
+        // response in the server - the type checks below narrow it to movie items.
+        // context.Result.Value is the live object, so mutating it in place (before
+        // calling next()) is enough - there's no "send it back" step.
         if (context.Result is ObjectResult { Value: BaseItemDto dto })
         {
             await AnnotateAsync(dto).ConfigureAwait(false);
@@ -46,6 +53,15 @@ public class DemoInterceptFilter : IAsyncResultFilter
         else if (context.Result is ObjectResult { Value: QueryResult<BaseItemDto> query })
         {
             foreach (var item in query.Items)
+            {
+                await AnnotateAsync(item).ConfigureAwait(false);
+            }
+        }
+        else if (context.Result is ObjectResult { Value: IEnumerable<BaseItemDto> list })
+        {
+            // Items/Latest ("Recently Added") returns a raw list instead of
+            // QueryResult<BaseItemDto> - found by testing, not documented anywhere.
+            foreach (var item in list)
             {
                 await AnnotateAsync(item).ConfigureAwait(false);
             }
@@ -70,6 +86,8 @@ public class DemoInterceptFilter : IAsyncResultFilter
 
         var libraryOptions = _libraryManager.GetLibraryOptions(movie);
 
+        // Providers already configured for this library (TMDb, TVDb...) - no
+        // separate API key needed.
         foreach (var provider in _providerManager.GetMetadataProviders<Movie>(movie, libraryOptions))
         {
             if (provider is not IRemoteMetadataProvider<Movie, MovieInfo> remote)
@@ -77,6 +95,8 @@ public class DemoInterceptFilter : IAsyncResultFilter
                 continue;
             }
 
+            // Language/country here (not the library's global setting) is what makes
+            // this per-request instead of per-library.
             var info = new MovieInfo
             {
                 Name = movie.Name,
@@ -85,6 +105,7 @@ public class DemoInterceptFilter : IAsyncResultFilter
                 ProviderIds = movie.ProviderIds
             };
 
+            // Direct provider call, not persisted back to the library item.
             var result = await remote.GetMetadata(info, default).ConfigureAwait(false);
 
             if (result.HasMetadata)
