@@ -1,0 +1,8 @@
+notes
+.env
+
+bin/
+obj/
+.vs/
+.idea/
+artifacts
