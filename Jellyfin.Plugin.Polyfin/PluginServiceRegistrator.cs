@@ -1,3 +1,5 @@
+using Jellyfin.Plugin.Polyfin.Filters;
+using Jellyfin.Plugin.Polyfin.Services;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.AspNetCore.Mvc;
@@ -11,8 +13,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        // Make the filter resolvable from DI (needed since AddService below fetches it
-        // per-request via the service provider, not by calling `new`).
+        // Called once by PluginManager at startup, before the container is built -
+        // this only hands it recipes. Nothing here is actually constructed yet.
+        serviceCollection.AddSingleton<DemoMetadataAnnotator>();
         serviceCollection.AddSingleton<DemoInterceptFilter>();
 
         // MvcOptions.Filters is ASP.NET Core's GLOBAL filter list - every controller

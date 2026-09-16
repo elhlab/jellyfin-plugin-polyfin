@@ -22,6 +22,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
         : base(applicationPaths, xmlSerializer)
     {
+        // Built directly by PluginManager via reflection, before the DI
+        // (Dependency Injection) container exists - so DI can't inject Plugin
+        // elsewhere. Instance is the escape hatch other code uses to reach it
+        // (e.g. Plugin.Instance.DataFolderPath).
         Instance = this;
     }
 
