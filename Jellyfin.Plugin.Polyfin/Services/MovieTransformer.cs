@@ -1,4 +1,5 @@
 using System.Threading;
+using System.Threading.Tasks;
 using MediaBrowser.Model.Dto;
 
 namespace Jellyfin.Plugin.Polyfin.Services;
@@ -25,7 +26,8 @@ public class MovieTransformer
     /// <param name="movieItem">The movie item to transform.</param>
     /// <param name="locale">Resolved user locale.</param>
     /// <param name="cancellationToken">A token to observe for cancellation.</param>
-    public void Transform(BaseItemDto movieItem, ResolvedLocale locale, CancellationToken cancellationToken)
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    public async Task Transform(BaseItemDto movieItem, ResolvedLocale locale, CancellationToken cancellationToken)
     {
         return;
     }
