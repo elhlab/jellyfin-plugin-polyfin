@@ -7,21 +7,13 @@ namespace Jellyfin.Plugin.Polyfin.Services;
 /// <summary>
 /// A movie transformer which transforms movie metadata via the <see cref="Transform"/> method.
 /// </summary>
-public class MovieTransformer
+/// <param name="metadataResolver">Instance of the <see cref="MetadataResolver"/> class.</param>
+public class MovieTransformer(MetadataResolver metadataResolver)
 {
-    private readonly MetadataResolver _metadataResolver;
+    private readonly MetadataResolver _metadataResolver = metadataResolver;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MovieTransformer"/> class.
-    /// </summary>
-    /// <param name="metadataResolver">Instance of the <see cref="MetadataResolver"/> class.</param>
-    public MovieTransformer(MetadataResolver metadataResolver)
-    {
-        this._metadataResolver = metadataResolver;
-    }
-
-    /// <summary>
-    /// Transforms a movie.
+    /// Transforms a movie inplace.
     /// </summary>
     /// <param name="movieItem">The movie item to transform.</param>
     /// <param name="locale">Resolved user locale.</param>
