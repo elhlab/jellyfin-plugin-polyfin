@@ -6,5 +6,7 @@ obj/
 .vs/
 .idea/
 artifacts
+.codeql-db
+.codeql-results.sarif
 
 docker/
