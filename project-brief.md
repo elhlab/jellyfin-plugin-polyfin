@@ -23,6 +23,7 @@ Plugin integrates directly into jellyfin modifying responses
 - User selectable locale
 - Better test coverage
 - Explore spoofing default audio track based on user locale
+- Testing against the docker-compose Jellyfin instance
 
 ### Known issues and problems
 
