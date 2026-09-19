@@ -1,32 +1,29 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Data.Enums;
+using Jellyfin.Plugin.Polyfin.Services;
 using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Querying;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Net.Http.Headers;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Polyfin.Filters;
 
 /// <summary>
-/// blAHLBAH.
+/// Filter that transforms the metadata of movie items.
 /// </summary>
-public class InterceptionFilter : IAsyncResultFilter
+/// <param name="authorizationContext">Instance of the <see cref="IAuthorizationContext"/> interface. Used to identify the user.</param>
+/// <param name="movieTransformer">Instance of the <see cref="MovieTransformer"/> used to handle transforming movies.</param>
+/// <param name="logger">Instance of the <see cref="ILogger"/>.</param>
+public class InterceptionFilter(IAuthorizationContext authorizationContext, MovieTransformer movieTransformer, ILogger<InterceptionFilter> logger) : IAsyncResultFilter
 {
-    private readonly IAuthorizationContext _authorizationContext;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="InterceptionFilter"/> class.
-    /// </summary>
-    /// <param name="authorizationContext">Instance of the <see cref="IAuthorizationContext"/> interface. Used to identify the user.</param>
-    public InterceptionFilter(IAuthorizationContext authorizationContext)
-    {
-        _authorizationContext = authorizationContext;
-    }
+    private readonly IAuthorizationContext _authorizationContext = authorizationContext;
+    private readonly MovieTransformer _movieTransformer = movieTransformer;
+    private readonly ILogger<InterceptionFilter> _logger = logger;
 
     /// <inheritdoc />
     public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
@@ -40,56 +37,74 @@ public class InterceptionFilter : IAsyncResultFilter
         switch (result.Value)
         {
             case BaseItemDto item:
-            {
-                var (authInfo, acceptedLanguages) = await ResolveRequestContextAsync(context.HttpContext).ConfigureAwait(false);
-                await RouteItem(item, authInfo, acceptedLanguages).ConfigureAwait(false);
-                break;
-            }
+                {
+                    var locale = await ResolveLocaleAsync(context.HttpContext).ConfigureAwait(false);
+                    await TransformItemAsync(item, locale, context.HttpContext.RequestAborted).ConfigureAwait(false);
+                    break;
+                }
 
             case QueryResult<BaseItemDto> itemQuery:
-            {
-                var (authInfo, acceptedLanguages) = await ResolveRequestContextAsync(context.HttpContext).ConfigureAwait(false);
-                foreach (var item in itemQuery.Items)
                 {
-                    await RouteItem(item, authInfo, acceptedLanguages).ConfigureAwait(false);
-                }
+                    var locale = await ResolveLocaleAsync(context.HttpContext).ConfigureAwait(false);
+                    foreach (var item in itemQuery.Items)
+                    {
+                        await TransformItemAsync(item, locale, context.HttpContext.RequestAborted).ConfigureAwait(false);
+                    }
 
-                break;
-            }
+                    break;
+                }
 
             case IEnumerable<BaseItemDto> list:
-            {
-                var (authInfo, acceptedLanguages) = await ResolveRequestContextAsync(context.HttpContext).ConfigureAwait(false);
-                foreach (var item in list)
                 {
-                    await RouteItem(item, authInfo, acceptedLanguages).ConfigureAwait(false);
-                }
+                    var locale = await ResolveLocaleAsync(context.HttpContext).ConfigureAwait(false);
+                    foreach (var item in list)
+                    {
+                        await TransformItemAsync(item, locale, context.HttpContext.RequestAborted).ConfigureAwait(false);
+                    }
 
-                break;
-            }
+                    break;
+                }
         }
 
         await next().ConfigureAwait(false);
     }
 
-    private async Task<(AuthorizationInfo AuthInfo, IList<StringWithQualityHeaderValue> AcceptedLanguages)> ResolveRequestContextAsync(HttpContext httpContext)
+    /// <summary>
+    /// Resolves the user's locale from their personal settings, falling back to
+    /// the request's Accept-Language header when no personal setting is available.
+    /// </summary>
+    private async Task<ResolvedLocale?> ResolveLocaleAsync(HttpContext httpContext)
     {
+        // TODO: authInfo is not currently hooked up. Eventually it should be hooked up
+        // to the plugin's state manager, which stores the user-selected locale. Right
+        // now we're just using the locale from the request headers, which is inaccurate
+        // for non-browser clients, and sometimes even browser clients.
         var authInfo = await _authorizationContext.GetAuthorizationInfo(httpContext).ConfigureAwait(false);
-        var acceptedLanguages = GetOrderedLanguages(httpContext.Request);
-        return (authInfo, acceptedLanguages);
+
+        return ResolvedLocale.ResolveFromAcceptLanguage(httpContext.Request.Headers.AcceptLanguage.ToString());
     }
 
-    private async Task RouteItem(BaseItemDto item, AuthorizationInfo authInfo, IList<StringWithQualityHeaderValue> acceptedLanguages)
+    /// <summary>
+    /// Routes an item to the appropriate transformer based on its type.
+    /// Currently supports transforming movie items.
+    /// </summary>
+    private async Task TransformItemAsync(BaseItemDto item, ResolvedLocale? locale, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
-    }
+        if (locale == null)
+        {
+            _logger.LogDebug(
+                "Skipping transformation for item {ItemId}: no locale was resolved.",
+                item.Id);
+            return;
+        }
 
-    // Accept-Language is a weighted list ("fi,en-US;q=0.9,en;q=0.8"), not a single
-    // value - GetTypedHeaders() parses it into tag+quality pairs instead of us
-    // hand-splitting the raw string, sorted by quality here so index 0 is the
-    // caller's actual first preference.
-    private static IList<StringWithQualityHeaderValue> GetOrderedLanguages(HttpRequest request) =>
-        request.GetTypedHeaders().AcceptLanguage
-            .OrderByDescending(language => language.Quality ?? 1)
-            .ToList();
+        switch (item.Type)
+        {
+            case BaseItemKind.Movie:
+                {
+                    await _movieTransformer.Transform(item, locale, cancellationToken).ConfigureAwait(false);
+                    break;
+                }
+        }
+    }
 }
