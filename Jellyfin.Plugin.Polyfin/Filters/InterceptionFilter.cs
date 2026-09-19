@@ -73,7 +73,7 @@ public class InterceptionFilter(IAuthorizationContext authorizationContext, Movi
     /// Resolves the user's locale from their personal settings, falling back to
     /// the request's Accept-Language header when no personal setting is available.
     /// </summary>
-    private async Task<ResolvedLocale?> ResolveLocaleAsync(HttpContext httpContext)
+    private async Task<Locale?> ResolveLocaleAsync(HttpContext httpContext)
     {
         // TODO: authInfo is not currently hooked up. Eventually it should be hooked up
         // to the plugin's state manager, which stores the user-selected locale. Right
@@ -81,14 +81,14 @@ public class InterceptionFilter(IAuthorizationContext authorizationContext, Movi
         // for non-browser clients, and sometimes even browser clients.
         var authInfo = await _authorizationContext.GetAuthorizationInfo(httpContext).ConfigureAwait(false);
 
-        return ResolvedLocale.ResolveFromAcceptLanguage(httpContext.Request.Headers.AcceptLanguage.ToString());
+        return Locale.FromAcceptLanguage(httpContext.Request.Headers.AcceptLanguage.ToString());
     }
 
     /// <summary>
     /// Routes an item to the appropriate transformer based on its type.
     /// Currently supports transforming movie items.
     /// </summary>
-    private async Task TransformItemAsync(BaseItemDto item, ResolvedLocale? locale, CancellationToken cancellationToken)
+    private async Task TransformItemAsync(BaseItemDto item, Locale? locale, CancellationToken cancellationToken)
     {
         if (locale == null)
         {

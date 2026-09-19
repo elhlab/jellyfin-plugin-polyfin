@@ -19,7 +19,7 @@ public class MovieTransformer(MetadataResolver metadataResolver)
     /// <param name="locale">Resolved user locale.</param>
     /// <param name="cancellationToken">A token to observe for cancellation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task Transform(BaseItemDto movieItem, ResolvedLocale locale, CancellationToken cancellationToken)
+    public async Task Transform(BaseItemDto movieItem, Locale locale, CancellationToken cancellationToken)
     {
         return;
     }
