@@ -16,6 +16,8 @@ Plugin integrates directly into jellyfin modifying responses
 
 - Movie metadata
 - jellyfin plugin config (static, eg requiring reload to update)
+- Scheduled task that resolves and caches metadata in the background for
+  every movie x admin-configured locale.
 
 ### Future
 
@@ -33,3 +35,5 @@ Plugin integrates directly into jellyfin modifying responses
 - Sort order and alphabetical browse position don't follow the translated
   title.
 - Offline/synced copies bake in whatever language was active at sync time.
+- Only title and overview are translated. Genres, studios, tags etc. stay in
+  the library's language.
