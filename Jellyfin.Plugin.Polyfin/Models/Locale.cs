@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Linq;
 using Microsoft.Net.Http.Headers;
 
-namespace Jellyfin.Plugin.Polyfin.Services;
+namespace Jellyfin.Plugin.Polyfin.Models;
 
 /// <summary>
 /// A language with an optional country. <see cref="Country"/> is set only when the

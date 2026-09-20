@@ -1,6 +1,6 @@
 using MediaBrowser.Controller.Entities;
 
-namespace Jellyfin.Plugin.Polyfin.Services;
+namespace Jellyfin.Plugin.Polyfin.Models;
 
 /// <summary>
 /// Metadata fields resolved from one or more providers.

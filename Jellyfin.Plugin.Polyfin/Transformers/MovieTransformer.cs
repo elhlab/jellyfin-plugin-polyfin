@@ -1,10 +1,12 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.Polyfin.Models;
+using Jellyfin.Plugin.Polyfin.Services;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Dto;
 
-namespace Jellyfin.Plugin.Polyfin.Services;
+namespace Jellyfin.Plugin.Polyfin.Transformers;
 
 /// <summary>
 /// A movie transformer which transforms movie metadata via the <see cref="Transform"/> method.
