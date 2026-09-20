@@ -1,5 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Dto;
 
 namespace Jellyfin.Plugin.Polyfin.Services;
@@ -21,6 +23,14 @@ public class MovieTransformer(MetadataResolver metadataResolver)
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task Transform(BaseItemDto movieItem, Locale locale, CancellationToken cancellationToken)
     {
-        return;
+        // TODO: this should use the metadata store that will transparently resolve and cache our metadata.
+        var resolved = await _metadataResolver.ResolveMetadataAsync<Movie, MovieInfo>(movieItem.Id, locale, cancellationToken).ConfigureAwait(false);
+        if (resolved is null)
+        {
+            return;
+        }
+
+        movieItem.Name = resolved.Name ?? movieItem.Name;
+        movieItem.Overview = resolved.Overview ?? movieItem.Overview;
     }
 }
