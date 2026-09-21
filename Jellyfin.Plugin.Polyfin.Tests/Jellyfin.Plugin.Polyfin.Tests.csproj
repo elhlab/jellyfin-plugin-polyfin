@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Jellyfin.Plugin.Polyfin\Jellyfin.Plugin.Polyfin.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Fixtures\**\Migrations\*.sql" />
+  </ItemGroup>
+
 </Project>

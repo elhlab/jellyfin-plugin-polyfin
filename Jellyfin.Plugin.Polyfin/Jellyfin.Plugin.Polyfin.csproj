@@ -30,6 +30,7 @@
   <ItemGroup>
     <None Remove="Configuration\configPage.html" />
     <EmbeddedResource Include="Configuration\configPage.html" />
+    <EmbeddedResource Include="Database\**\Migrations\*.sql" />
   </ItemGroup>
 
 </Project>
