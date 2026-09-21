@@ -88,7 +88,7 @@ public static class MigrationRunner
 
             transaction.Commit();
         }
-        catch (Exception ex)
+        catch (SqliteException ex)
         {
             throw new InvalidOperationException($"Migration {migration.Version} ({migration.Name}) failed.", ex);
         }
