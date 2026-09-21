@@ -1,5 +1,8 @@
+using System.IO;
+using Jellyfin.Plugin.Polyfin.Database.Metadata;
 using Jellyfin.Plugin.Polyfin.Filters;
 using Jellyfin.Plugin.Polyfin.Services;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +20,16 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // this only hands it recipes. Nothing here is actually constructed yet.
         serviceCollection.AddSingleton<DemoMetadataAnnotator>();
         serviceCollection.AddSingleton<DemoInterceptFilter>();
+
+        // Lives next to the plugin's config XML rather than in DataFolderPath, which
+        // has the assembly version in its name and would orphan the db on every update.
+        // See notes/plugin-data-location.md.
+        serviceCollection.AddSingleton(serviceProvider =>
+        {
+            var dataFolderPath = Path.Join(serviceProvider.GetRequiredService<IApplicationPaths>().PluginConfigurationsPath, "Polyfin");
+            Directory.CreateDirectory(dataFolderPath);
+            return new MetadataStore(dataFolderPath);
+        });
 
         // MvcOptions.Filters is ASP.NET Core's GLOBAL filter list - every controller
         // action in the whole Jellyfin process gets this filter added to its pipeline,
