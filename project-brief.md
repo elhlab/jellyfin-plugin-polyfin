@@ -23,6 +23,7 @@ Plugin integrates directly into jellyfin modifying responses
 
 - Series metadata
 - User selectable locale
+- Default language set to a configured language (e.g. Deutsch) instead of the library's own.
 - Better test coverage
 - Explore spoofing default audio track based on user locale
 - Testing against the docker-compose Jellyfin instance
