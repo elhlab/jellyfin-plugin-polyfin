@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<!--
+    This page, its stylesheet, and its script were written with
+    substantial AI assistance.
+
+    The code has received some manual review, but has not been
+    thoroughly reviewed or refactored. It may benefit from a more
+    experienced eye and potentially a more substantial rewrite.
+-->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Polyfin</title>
+</head>
+
+<body>
+    <div id="PolyfinConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+        data-require="emby-input,emby-button,emby-select,paper-icon-button-light"
+        data-controller="__plugin/Polyfin.js">
+        <link rel="stylesheet" href="configurationpage?name=Polyfin.css">
+
+
+        <div data-role="content">
+            <div class="content-primary">
+                <div id="LoadProblem" class="polyfinProblem" hidden>
+                    <p>Could not load the settings. Nothing has been changed.</p>
+                    <button id="RetryLoad" is="emby-button" type="button" class="raised button">
+                        <span>Try again</span>
+                    </button>
+                </div>
+
+                <form id="PolyfinConfigForm">
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">Languages</h2>
+                        <p class="fieldDescription">
+                            Library items are translated according to these languages, defined below.
+                            Viewers matching none of them see the original metadata.
+                        </p>
+
+                        <div id="LanguageList"></div>
+
+                        <button id="AddLanguage" is="emby-button" type="button" class="raised button block">
+                            <span>Add language</span>
+                        </button>
+                        <div id="LanguagesProblem" class="fieldDescription polyfinProblem"></div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">User language</h2>
+                        <p class="fieldDescription">
+                            Optional. Set a language for specific users. Useful for clients that don't
+                            provide reliable language information.
+                        </p>
+
+                        <div id="ConfiguredUserList"></div>
+
+                        <button id="AddConfiguredUser" is="emby-button" type="button" class="raised button block">
+                            <span>Add user</span>
+                        </button>
+                        <div id="ConfiguredUsersProblem" class="fieldDescription polyfinProblem"></div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">Advanced</h2>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ProviderTimeoutSeconds">Provider timeout
+                                (seconds)</label>
+                            <input id="ProviderTimeoutSeconds" type="number" is="emby-input" min="1" />
+                            <div class="fieldDescription">How long a single metadata provider may take before it is
+                                skipped.</div>
+                        </div>
+                    </div>
+
+                    <button is="emby-button" type="submit" class="raised button-submit block">
+                        <span>Save</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <template id="LanguageTemplate">
+            <details class="polyfinLanguage">
+                <summary>
+                    <span data-name="summaryName">New language</span>
+                    <span data-name="summaryMetadataLocale" class="polyfinMuted"></span>
+                </summary>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused">Name</label>
+                    <input data-name="name" type="text" is="emby-input" />
+                    <div class="fieldDescription">A language label, e.g. "Deutsch".</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused">Metadata locale</label>
+                    <input data-name="metadataLocale" type="text" is="emby-input" placeholder="de" />
+                    <div class="fieldDescription">
+                        The language tag metadata providers are queried with, usually just the language.
+                        Adding a region, like "pt-BR", is only needed when a provider has
+                        separate metadata for it.
+                        <br>
+                        <a href="https://www.w3.org/International/articles/language-tags/" target="_blank"
+                            rel="noopener noreferrer">Learn how these tags work</a>
+                    </div>
+                </div>
+
+                <label class="inputLabel inputLabelUnfocused">User language matching</label>
+                <div data-name="matchLocales"></div>
+                <button data-name="addMatchLocale" is="emby-button" type="button" class="raised button">
+                    <span>Add pattern</span>
+                </button>
+                <div class="fieldDescription">
+                    Used when no language is set for the user. Generally accurate for browser clients.
+                    NNative clients don't always provide reliable language information.
+                    <br>
+                    "de" matches every German-speaking region, while "de-AT" only matches Austria.
+                </div>
+
+                <!-- Generated when the language is created and never shown: it only exists so a
+                     viewer's saved language choice survives the language being renamed. -->
+                <input data-name="id" type="hidden" />
+
+                <div data-name="problem" class="fieldDescription polyfinProblem"></div>
+
+                <button data-name="removeLanguage" is="emby-button" type="button"
+                    class="raised button block polyfinDanger polyfinRemoveLanguage">
+                    <span>Remove language</span>
+                </button>
+            </details>
+        </template>
+
+        <template id="ConfiguredUserTemplate">
+            <div class="polyfinRow">
+                <div class="selectContainer">
+                    <select data-name="userId" is="emby-select" class="emby-select-withcolor emby-select"></select>
+                </div>
+                <div class="selectContainer">
+                    <select data-name="languageId" is="emby-select" class="emby-select-withcolor emby-select"></select>
+                </div>
+                <button data-name="removeConfiguredUser" is="paper-icon-button-light" type="button"
+                    class="paper-icon-button-light polyfinRemoveRow" title="Remove this user">
+                    <span class="material-icons" aria-hidden="true">close</span>
+                </button>
+            </div>
+        </template>
+
+        <template id="MatchLocaleTemplate">
+            <div class="polyfinRow">
+                <div class="inputContainer">
+                    <input data-name="matchLocale" type="text" is="emby-input" placeholder="de" />
+                </div>
+                <button data-name="removeMatchLocale" is="paper-icon-button-light" type="button"
+                    class="paper-icon-button-light polyfinRemoveRow" title="Remove this pattern">
+                    <span class="material-icons" aria-hidden="true">close</span>
+                </button>
+            </div>
+        </template>
+    </div>
+</body>
+</html>

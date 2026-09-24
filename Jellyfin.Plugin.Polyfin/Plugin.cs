@@ -48,7 +48,20 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             new PluginPageInfo
             {
                 Name = Name,
-                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace)
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.ConfigPage.Polyfin.html", GetType().Namespace)
+            },
+
+            // The page requests these by name. (E.g. 'configurationpage?name=Polyfin.css')
+            // The lookup is global across every plugin, so they have to be unique.
+            new PluginPageInfo
+            {
+                Name = $"{Name}.css",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.ConfigPage.Polyfin.css", GetType().Namespace)
+            },
+            new PluginPageInfo
+            {
+                Name = $"{Name}.js",
+                EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.ConfigPage.Polyfin.js", GetType().Namespace)
             }
         ];
     }
