@@ -19,11 +19,13 @@ namespace Jellyfin.Plugin.Polyfin.Filters;
 /// Filter that transforms the metadata of movie items.
 /// </summary>
 /// <param name="authorizationContext">Instance of the <see cref="IAuthorizationContext"/> interface. Used to identify the user.</param>
+/// <param name="languageResolver">nstance of the <see cref="LanguageResolver"/> used to determine the client's language.</param>
 /// <param name="movieTransformer">Instance of the <see cref="MovieTransformer"/> used to handle transforming movies.</param>
 /// <param name="logger">Instance of the <see cref="ILogger"/>.</param>
-public class InterceptionFilter(IAuthorizationContext authorizationContext, MovieTransformer movieTransformer, ILogger<InterceptionFilter> logger) : IAsyncResultFilter
+public class InterceptionFilter(IAuthorizationContext authorizationContext, LanguageResolver languageResolver, MovieTransformer movieTransformer, ILogger<InterceptionFilter> logger) : IAsyncResultFilter
 {
     private readonly IAuthorizationContext _authorizationContext = authorizationContext;
+    private readonly LanguageResolver _languageResolver = languageResolver;
     private readonly MovieTransformer _movieTransformer = movieTransformer;
     private readonly ILogger<InterceptionFilter> _logger = logger;
 
@@ -72,18 +74,14 @@ public class InterceptionFilter(IAuthorizationContext authorizationContext, Movi
     }
 
     /// <summary>
-    /// Resolves the user's locale from their personal settings, falling back to
-    /// the request's Accept-Language header when no personal setting is available.
+    /// Resolves the metadata locale for the current request.
     /// </summary>
     private async Task<Locale?> ResolveLocaleAsync(HttpContext httpContext)
     {
-        // TODO: authInfo is not currently hooked up. Eventually it should be hooked up
-        // to the plugin's state manager, which stores the user-selected locale. Right
-        // now we're just using the locale from the request headers, which is inaccurate
-        // for non-browser clients, and sometimes even browser clients.
         var authInfo = await _authorizationContext.GetAuthorizationInfo(httpContext).ConfigureAwait(false);
+        var language = _languageResolver.Resolve(authInfo.UserId, httpContext.Request.Headers.AcceptLanguage.ToString());
 
-        return Locale.FromAcceptLanguage(httpContext.Request.Headers.AcceptLanguage.ToString());
+        return language?.MetadataLocale;
     }
 
     /// <summary>

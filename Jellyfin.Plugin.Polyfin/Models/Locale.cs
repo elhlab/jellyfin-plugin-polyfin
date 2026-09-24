@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Microsoft.Net.Http.Headers;
@@ -19,6 +20,11 @@ public sealed record Locale(string Language, string? Country)
     /// <returns>The locale, or <see langword="null"/> if the tag isn't recognized.</returns>
     public static Locale? FromTag(string tag)
     {
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            return null;
+        }
+
         CultureInfo culture;
         try
         {
@@ -41,16 +47,17 @@ public sealed record Locale(string Language, string? Country)
 
     /// <summary>
     /// Parses a raw Accept-Language header value (e.g. "fi,en-US;q=0.9,en;q=0.8")
-    /// and picks the caller's highest-quality candidate that's actually
-    /// recognized, trying the next one down if a candidate isn't.
+    /// into all recognized locale candidates, ordered by descending quality.
+    /// Unrecognized candidates are omitted.
     /// </summary>
     /// <param name="acceptLanguageHeader">The raw Accept-Language header value.</param>
-    /// <returns>The locale, or <see langword="null"/> if no candidate is recognized.</returns>
-    public static Locale? FromAcceptLanguage(string acceptLanguageHeader)
+    /// <returns>The recognized locales, best first; empty if none are recognized.</returns>
+    public static IReadOnlyList<Locale> AllFromAcceptLanguage(string acceptLanguageHeader)
     {
         return StringWithQualityHeaderValue.ParseList([acceptLanguageHeader])
             .OrderByDescending(candidate => candidate.Quality ?? 1)
             .Select(candidate => FromTag(candidate.Value.ToString()))
-            .FirstOrDefault(locale => locale is not null);
+            .OfType<Locale>()
+            .ToList();
     }
 }

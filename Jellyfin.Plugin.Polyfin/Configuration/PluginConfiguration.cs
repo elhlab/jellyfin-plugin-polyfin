@@ -1,57 +1,37 @@
+using System;
+using System.Diagnostics.CodeAnalysis;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.Polyfin.Configuration;
 
 /// <summary>
-/// The configuration options.
-/// </summary>
-public enum SomeOptions
-{
-    /// <summary>
-    /// Option one.
-    /// </summary>
-    OneOption,
-
-    /// <summary>
-    /// Second option.
-    /// </summary>
-    AnotherOption
-}
-
-/// <summary>
-/// Plugin configuration.
+/// Raw plugin configuration as stored in the plugin's XML file and edited on the settings page.
+/// Changing a property only changes this object; it does not save or reload the configuration.
+/// To change the configuration from code, pass it to
+/// <see cref="MediaBrowser.Common.Plugins.BasePlugin{TConfigurationType}.UpdateConfiguration"/>.
 /// </summary>
 public class PluginConfiguration : BasePluginConfiguration
 {
+    private int _providerTimeoutSeconds = 10;
+
     /// <summary>
-    /// Initializes a new instance of the <see cref="PluginConfiguration"/> class.
+    /// Gets or sets the maximum time, in seconds, a metadata provider may take before it is skipped.
     /// </summary>
-    public PluginConfiguration()
+    public int ProviderTimeoutSeconds
     {
-        // set default options here
-        Options = SomeOptions.AnotherOption;
-        TrueFalseSetting = true;
-        AnInteger = 2;
-        AString = "string";
+        get => _providerTimeoutSeconds;
+        set => _providerTimeoutSeconds = Math.Max(1, value);
     }
 
     /// <summary>
-    /// Gets or sets a value indicating whether some true or false setting is enabled..
+    /// Gets or sets the languages offered by the administrator.
     /// </summary>
-    public bool TrueFalseSetting { get; set; }
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "Jellyfin serializes this to XML and JSON, which both need a settable array.")]
+    public ConfiguredLanguage[] Languages { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets an integer setting.
+    /// Gets or sets the language settings configured for individual users.
     /// </summary>
-    public int AnInteger { get; set; }
-
-    /// <summary>
-    /// Gets or sets a string setting.
-    /// </summary>
-    public string AString { get; set; }
-
-    /// <summary>
-    /// Gets or sets an enum option.
-    /// </summary>
-    public SomeOptions Options { get; set; }
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "Jellyfin serializes this to XML and JSON, which both need a settable array.")]
+    public ConfiguredUser[] Users { get; set; } = [];
 }
