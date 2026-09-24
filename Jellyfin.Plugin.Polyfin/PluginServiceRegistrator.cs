@@ -3,6 +3,7 @@ using Jellyfin.Plugin.Polyfin.Configuration;
 using Jellyfin.Plugin.Polyfin.Database.Metadata;
 using Jellyfin.Plugin.Polyfin.Filters;
 using Jellyfin.Plugin.Polyfin.Services;
+using Jellyfin.Plugin.Polyfin.Transformers;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
@@ -18,10 +19,10 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        // Called once by PluginManager at startup, before the container is built -
-        // this only hands it recipes. Nothing here is actually constructed yet.
-        serviceCollection.AddSingleton<DemoMetadataAnnotator>();
-        serviceCollection.AddSingleton<DemoInterceptFilter>();
+        serviceCollection.AddSingleton<MetadataFetcher>();
+        serviceCollection.AddSingleton<MetadataResolver>();
+        serviceCollection.AddSingleton<MovieTransformer>();
+        serviceCollection.AddSingleton<InterceptionFilter>();
 
         // Plugin.Instance is still null while services are
         // being registered, and exists by the time anything resolves this.
@@ -32,7 +33,6 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
 
         // Lives next to the plugin's config XML rather than in DataFolderPath, which
         // has the assembly version in its name and would orphan the db on every update.
-        // See notes/plugin-data-location.md.
         serviceCollection.AddSingleton(serviceProvider =>
         {
             var dataFolderPath = Path.Join(serviceProvider.GetRequiredService<IApplicationPaths>().PluginConfigurationsPath, "Polyfin");
@@ -40,11 +40,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             return new MetadataStore(dataFolderPath);
         });
 
-        // MvcOptions.Filters is ASP.NET Core's GLOBAL filter list - every controller
-        // action in the whole Jellyfin process gets this filter added to its pipeline,
-        // automatically, with no change to Jellyfin's own controller code (which we
-        // don't own and can't add attributes to). This one line is what makes
-        // DemoInterceptFilter run on every request instead of none.
-        serviceCollection.PostConfigure<MvcOptions>(options => options.Filters.AddService<DemoInterceptFilter>());
+        // Global filter: runs on the result of every controller action in Jellyfin.
+        serviceCollection.PostConfigure<MvcOptions>(options => options.Filters.AddService<InterceptionFilter>());
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -78,10 +79,18 @@ public class InterceptionFilter(IAuthorizationContext authorizationContext, Lang
     /// </summary>
     private async Task<Locale?> ResolveLocaleAsync(HttpContext httpContext)
     {
-        var authInfo = await _authorizationContext.GetAuthorizationInfo(httpContext).ConfigureAwait(false);
-        var language = _languageResolver.Resolve(authInfo.UserId, httpContext.Request.Headers.AcceptLanguage.ToString());
+        try
+        {
+            var authInfo = await _authorizationContext.GetAuthorizationInfo(httpContext).ConfigureAwait(false);
+            var language = _languageResolver.Resolve(authInfo.UserId, httpContext.Request.Headers.AcceptLanguage.ToString());
 
-        return language?.MetadataLocale;
+            return language?.MetadataLocale;
+        }
+        catch (Exception ex) when (!httpContext.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogError(ex, "Could not resolve the request's language, leaving items untranslated");
+            return null;
+        }
     }
 
     /// <summary>
@@ -98,13 +107,20 @@ public class InterceptionFilter(IAuthorizationContext authorizationContext, Lang
             return;
         }
 
-        switch (item.Type)
+        try
         {
-            case BaseItemKind.Movie:
-                {
-                    await _movieTransformer.Transform(item, locale, cancellationToken).ConfigureAwait(false);
-                    break;
-                }
+            switch (item.Type)
+            {
+                case BaseItemKind.Movie:
+                    {
+                        await _movieTransformer.Transform(item, locale, cancellationToken).ConfigureAwait(false);
+                        break;
+                    }
+            }
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogError(ex, "Could not transform item {ItemId}, leaving it untranslated", item.Id);
         }
     }
 }
