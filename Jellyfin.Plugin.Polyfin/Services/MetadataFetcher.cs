@@ -13,11 +13,11 @@ namespace Jellyfin.Plugin.Polyfin.Services;
 /// Resolves metadata for an item in the specified locale, or the default locale,
 /// using the library's own metadata providers (TMDb, TVDb, etc.).
 /// </summary>
-public class MetadataResolver(ILibraryManager libraryManager, IProviderManager providerManager, ILogger<MetadataResolver> logger)
+public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager providerManager, ILogger<MetadataFetcher> logger)
 {
     private readonly ILibraryManager _libraryManager = libraryManager;
     private readonly IProviderManager _providerManager = providerManager;
-    private readonly ILogger<MetadataResolver> _logger = logger;
+    private readonly ILogger<MetadataFetcher> _logger = logger;
 
     /// <summary>
     /// Gets or sets how long a single provider may take before it is skipped and the next one is tried.
