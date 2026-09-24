@@ -46,6 +46,12 @@ public sealed record Locale(string Language, string? Country)
     }
 
     /// <summary>
+    /// Formats the locale as a tag, e.g. "de" or "de-DE". The inverse of <see cref="FromTag"/>.
+    /// </summary>
+    /// <returns>The tag.</returns>
+    public string ToTag() => Country is null ? Language : Language + "-" + Country;
+
+    /// <summary>
     /// Parses a raw Accept-Language header value (e.g. "fi,en-US;q=0.9,en;q=0.8")
     /// into all recognized locale candidates, ordered by descending quality.
     /// Unrecognized candidates are omitted.

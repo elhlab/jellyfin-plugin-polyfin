@@ -33,6 +33,14 @@ public class LocaleTests
         Assert.Null(result.Country);
     }
 
+    [Theory]
+    [InlineData("de", null, "de")]
+    [InlineData("de", "DE", "de-DE")]
+    public void ToTag_FormatsTag(string language, string? country, string expected)
+    {
+        Assert.Equal(expected, new Locale(language, country).ToTag());
+    }
+
     // CultureInfo accepts almost any letters-and-hyphens string as a custom culture,
     // so only malformed tags are rejected, not unknown languages.
     [Theory]

@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Jellyfin.Plugin.Polyfin.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Configuration\ConfigPage\**" />
     <EmbeddedResource Include="Configuration\ConfigPage\**" />
     <EmbeddedResource Include="Database\**\Migrations\*.sql" />

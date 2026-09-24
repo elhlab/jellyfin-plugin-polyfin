@@ -11,13 +11,13 @@ namespace Jellyfin.Plugin.Polyfin.Transformers;
 /// <summary>
 /// A movie transformer which transforms movie metadata via the <see cref="Transform"/> method.
 /// </summary>
-/// <param name="metadataResolver">Instance of the <see cref="MetadataFetcher"/> class.</param>
-public class MovieTransformer(MetadataFetcher metadataResolver)
+/// <param name="metadataResolver">Instance of the <see cref="MetadataResolver"/> class.</param>
+public class MovieTransformer(MetadataResolver metadataResolver)
 {
-    private readonly MetadataFetcher _metadataResolver = metadataResolver;
+    private readonly MetadataResolver _metadataResolver = metadataResolver;
 
     /// <summary>
-    /// Transforms a movie inplace.
+    /// Transforms a movie in place.
     /// </summary>
     /// <param name="movieItem">The movie item to transform.</param>
     /// <param name="locale">Resolved user locale.</param>
@@ -25,8 +25,7 @@ public class MovieTransformer(MetadataFetcher metadataResolver)
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task Transform(BaseItemDto movieItem, Locale locale, CancellationToken cancellationToken)
     {
-        // TODO: this should use the metadata store that will transparently resolve and cache our metadata.
-        var resolved = await _metadataResolver.ResolveMetadataAsync<Movie, MovieInfo>(movieItem.Id, locale, cancellationToken).ConfigureAwait(false);
+        var resolved = await _metadataResolver.ResolveAsync<Movie, MovieInfo>(movieItem.Id, locale, cancellationToken).ConfigureAwait(false);
         if (resolved is null)
         {
             return;

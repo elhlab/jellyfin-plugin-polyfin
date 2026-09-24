@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.Polyfin.Services;
 
 /// <summary>
-/// Resolves metadata for an item in the specified locale, or the default locale,
-/// using the library's own metadata providers (TMDb, TVDb, etc.).
+/// Fetches metadata for an item in the specified locale using the library's
+/// configured metadata providers.
 /// </summary>
 public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager providerManager, ILogger<MetadataFetcher> logger)
 {
@@ -20,14 +20,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     private readonly ILogger<MetadataFetcher> _logger = logger;
 
     /// <summary>
-    /// Gets or sets how long a single provider may take before it is skipped and the next one is tried.
-    /// </summary>
-    // TODO: once the settings page exists, this should be read from there directly.
-    public TimeSpan ProviderTimeout { get; set; } = TimeSpan.FromSeconds(10);
-
-    /// <summary>
-    /// Looks up the item by id, then resolves it using the same metadata resolution
-    /// as the item overload. Returns null if the id does not refer to a <typeparamref name="TItem"/>.
+    /// Looks up the item by ID and fetches its metadata.
     /// </summary>
     /// <typeparam name="TItem">The item's concrete type, e.g. Movie, Season or Episode.</typeparam>
     /// <typeparam name="TInfo">The lookup info type for TItem, e.g. MovieInfo or EpisodeInfo.</typeparam>
@@ -35,31 +28,24 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// <param name="locale">
     /// The locale to request, or null to use the library's own language.
     /// </param>
-    /// <param name="cancellationToken">
-    /// The cancellation token to observe. Each provider is also given <see cref="ProviderTimeout"/>;
-    /// one that overruns is skipped, not fatal.
-    /// </param>
+    /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>
     /// The resolved metadata, or null if the id does not refer to a <typeparamref name="TItem"/>.
     /// </returns>
-    public async Task<ResolvedMetadata?> ResolveMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
+    public async Task<FetchedMetadata?> FetchMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
         where TItem : BaseItem, IHasLookupInfo<TInfo>
         where TInfo : ItemLookupInfo, new()
     {
         if (_libraryManager.GetItemById(itemId) is TItem item)
         {
-            return await ResolveMetadataAsync<TItem, TInfo>(item, locale, cancellationToken).ConfigureAwait(false);
+            return await FetchMetadataAsync<TItem, TInfo>(item, locale, cancellationToken).ConfigureAwait(false);
         }
 
         return null;
     }
 
     /// <summary>
-    /// Resolves <paramref name="item"/> for the specified <paramref name="locale"/>
-    /// using the configured remote metadata providers in order. For each field,
-    /// the first provider that supplies a valid value is used. Fallbacks are not
-    /// handled: if a provider returns metadata in a different language than requested,
-    /// its result is ignored.
+    /// Fetches the item's metadata using the configured remote providers.
     /// </summary>
     /// <typeparam name="TItem">The item's concrete type, e.g. Movie, Season or Episode.</typeparam>
     /// <typeparam name="TInfo">The lookup info type for TItem, e.g. MovieInfo or EpisodeInfo.</typeparam>
@@ -67,14 +53,11 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// <param name="locale">
     /// The locale to request, or null to use the library's own language.
     /// </param>
-    /// <param name="cancellationToken">
-    /// The cancellation token to observe. Each provider is also given <see cref="ProviderTimeout"/>;
-    /// one that overruns is skipped, not fatal.
-    /// </param>
+    /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>
     /// The merged metadata, or null if no provider returned metadata in the requested language.
     /// </returns>
-    public async Task<ResolvedMetadata?> ResolveMetadataAsync<TItem, TInfo>(TItem item, Locale? locale, CancellationToken cancellationToken)
+    public async Task<FetchedMetadata?> FetchMetadataAsync<TItem, TInfo>(TItem item, Locale? locale, CancellationToken cancellationToken)
         where TItem : BaseItem, IHasLookupInfo<TInfo>
         where TInfo : ItemLookupInfo, new()
     {
@@ -87,7 +70,9 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
 
         var libraryOptions = _libraryManager.GetLibraryOptions(item);
 
-        ResolvedMetadata? merged = null;
+        var providerTimeout = TimeSpan.FromSeconds(Plugin.Instance!.Configuration.ProviderTimeoutSeconds);
+
+        FetchedMetadata? merged = null;
         foreach (var provider in _providerManager.GetMetadataProviders<TItem>(item, libraryOptions))
         {
             if (provider is not IRemoteMetadataProvider<TItem, TInfo> remote)
@@ -96,7 +81,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
             }
 
             using var providerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            providerCts.CancelAfter(ProviderTimeout);
+            providerCts.CancelAfter(providerTimeout);
 
             try
             {
@@ -113,7 +98,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
                     continue;
                 }
 
-                merged = (merged ?? new ResolvedMetadata(null, null)).FillFrom(result.Item);
+                merged = (merged ?? new FetchedMetadata(null, null)).FillFrom(result.Item);
 
                 if (merged.IsComplete)
                 {
@@ -122,7 +107,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                _logger.LogWarning("{Provider} timed out after {Timeout} for {Item}, trying next provider", provider.Name, ProviderTimeout, item.Name);
+                _logger.LogWarning("{Provider} timed out after {Timeout} for {Item}, trying next provider", provider.Name, providerTimeout, item.Name);
             }
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
@@ -137,7 +122,10 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// Compares language subtags only, so "de" matches "de-AT". An unreported
     /// language counts as a match.
     /// </summary>
-    private static bool IsSameLanguage(string? resultLanguage, string? requestedLanguage)
+    /// <param name="resultLanguage">The language to compare.</param>
+    /// <param name="requestedLanguage">The language to compare against.</param>
+    /// <returns>Whether the languages match.</returns>
+    internal static bool IsSameLanguage(string? resultLanguage, string? requestedLanguage)
     {
         if (string.IsNullOrEmpty(resultLanguage) || string.IsNullOrEmpty(requestedLanguage))
         {
