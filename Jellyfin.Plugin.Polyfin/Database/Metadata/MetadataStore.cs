@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Jellyfin.Plugin.Polyfin.Models;
 using Microsoft.Data.Sqlite;
@@ -54,6 +55,32 @@ public class MetadataStore
 
         using var reader = command.ExecuteReader();
         return reader.Read() ? FromReader(reader) : null;
+    }
+
+    /// <summary>
+    /// Reads every row stored in a given locale.
+    /// </summary>
+    /// <param name="locale">The locale to match.</param>
+    /// <returns>The stored metadata of each row.</returns>
+    public IEnumerable<StoredMetadata> Enumerate(Locale locale)
+    {
+        using var connection = new SqliteConnection(_connectionString);
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT "guid", "locale", "name", "overview"
+            FROM metadata
+            WHERE "locale" = $locale;
+            """;
+        command.Parameters.AddWithValue("$locale", locale.ToTag());
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            yield return FromReader(reader);
+        }
     }
 
     /// <summary>

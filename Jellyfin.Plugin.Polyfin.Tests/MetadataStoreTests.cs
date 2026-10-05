@@ -40,6 +40,19 @@ public sealed class MetadataStoreTests : IDisposable
         Assert.Equal(updated, _store.Get(itemId, German));
     }
 
+    [Fact]
+    public void Enumerate_ReturnsRequestedLocale()
+    {
+        var first = new StoredMetadata(Guid.NewGuid(), German, "Titel", null);
+        var second = new StoredMetadata(Guid.NewGuid(), German, null, null);
+
+        _store.Set(first);
+        _store.Set(second);
+        _store.Set(new StoredMetadata(Guid.NewGuid(), new Locale("fr", "FR"), "Titre", null));
+
+        Assert.Equivalent(new[] { first, second }, _store.Enumerate(German), strict: true);
+    }
+
     public void Dispose()
     {
         // Pooling keeps the db file open; release it so the folder can be deleted.
