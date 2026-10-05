@@ -1,37 +1,19 @@
 services:
-  # One-shot: generates a small synthetic-but-real, playable H.264/AAC mp4 so the
-  # library has something to scan and actually play back. Runs via a throwaway
-  # ffmpeg container so nothing needs to be installed on the host - only Docker.
-  media-seed:
-    image: linuxserver/ffmpeg:latest
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -e
-        dir="/media/movies/Sintel (2010)"
-        mkdir -p "$$dir"
-        if [ ! -f "$$dir/fake-playable-video.mp4" ]; then
-          ffmpeg -y \
-            -f lavfi -i "testsrc=duration=10:size=1280x720:rate=30" \
-            -f lavfi -i "sine=frequency=1000:duration=10" \
-            -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest \
-            "$$dir/fake-playable-video.mp4"
-        fi
-    volumes:
-      - ./docker/media:/media
-
   jellyfin:
     image: jellyfin/jellyfin:latest
     container_name: polyfin-test-jellyfin
-    depends_on:
-      media-seed:
-        condition: service_completed_successfully
+    # Rebuilds the fake library in /media (see scripts/seed-media.sh), then starts Jellyfin as usual.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - /bin/sh /seed-media.sh --yes /media && exec /jellyfin/jellyfin
     ports:
       - "8096:8096"
     volumes:
       - ./docker/config:/config
       - ./docker/cache:/cache
       - ./docker/media:/media
+      - ./scripts/seed-media.sh:/seed-media.sh:ro
       # Drop-in plugin mount: rebuild the plugin (dotnet build), then just
       # restart this container to pick up the new DLL. Must be read-write -
       # Jellyfin writes its own meta.json into this folder on first load.
