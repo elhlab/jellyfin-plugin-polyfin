@@ -23,6 +23,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<MetadataResolver>();
         serviceCollection.AddSingleton<MovieTransformer>();
         serviceCollection.AddSingleton<InterceptionFilter>();
+        serviceCollection.AddHostedService<ItemUpdateListener>();
 
         serviceCollection.AddSingleton<RefreshQueue>();
 
