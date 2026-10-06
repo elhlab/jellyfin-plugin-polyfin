@@ -24,6 +24,12 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<MovieTransformer>();
         serviceCollection.AddSingleton<InterceptionFilter>();
 
+        serviceCollection.AddSingleton<RefreshQueue>();
+
+        serviceCollection.AddSingleton<BackgroundMetadataRefresher>();
+
+        serviceCollection.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<BackgroundMetadataRefresher>());
+
         // Plugin.Instance is still null while services are
         // being registered, and exists by the time anything resolves this.
         serviceCollection.AddSingleton(serviceProvider => new LanguageResolver(
