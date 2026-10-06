@@ -9,19 +9,19 @@ using Jellyfin.Plugin.Polyfin.Models;
 namespace Jellyfin.Plugin.Polyfin.Services;
 
 /// <summary>
-/// A priority queue of items to resolve, holding at most one entry per item and locale.
+/// A priority queue of items to refresh, holding at most one entry per item and locale.
 /// Items with the same priority are dequeued in the order they were queued.
 /// Safe to use from multiple threads.
 /// </summary>
 [SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix", Justification = "It is a queue.")]
-public sealed class ResolveQueue : IDisposable
+public sealed class RefreshQueue : IDisposable
 {
     // Each queued item exists in a list and in the dictionary.
     private readonly Lock _lock = new();
     private readonly SemaphoreSlim _itemsAvailable = new(0);
-    private readonly SortedDictionary<ResolvePriority, LinkedList<QueuedItem>> _listsByPriority =
+    private readonly SortedDictionary<QueuePriority, LinkedList<QueuedItem>> _listsByPriority =
         new(
-            Enum.GetValues<ResolvePriority>()
+            Enum.GetValues<QueuePriority>()
                 .ToDictionary(
                     priority => priority,
                     _ => new LinkedList<QueuedItem>()));

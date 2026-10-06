@@ -5,15 +5,15 @@ using Jellyfin.Plugin.Polyfin.Services;
 
 namespace Jellyfin.Plugin.Polyfin.Tests;
 
-public sealed class ResolveQueueTests : IDisposable
+public sealed class RefreshQueueTests : IDisposable
 {
     private static readonly Locale EnglishLocale = new("en", null);
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
-    private readonly ResolveQueue _queue = new();
+    private readonly RefreshQueue _queue = new();
 
     private static QueuedItem Item(Guid itemId, Locale locale,
-        ResolvePriority priority = ResolvePriority.Normal, bool refetch = false)
+        QueuePriority priority = QueuePriority.Normal, bool refetch = false)
         => new(itemId, BaseItemKind.Movie, locale, priority, refetch);
 
     private static Guid[] NewItemIds(int count)
@@ -61,8 +61,8 @@ public sealed class ResolveQueueTests : IDisposable
         Guid normal = Guid.NewGuid();
         Guid high = Guid.NewGuid();
 
-        _queue.Enqueue(Item(normal, EnglishLocale, ResolvePriority.Normal));
-        _queue.Enqueue(Item(high, EnglishLocale, ResolvePriority.High));
+        _queue.Enqueue(Item(normal, EnglishLocale, QueuePriority.Normal));
+        _queue.Enqueue(Item(high, EnglishLocale, QueuePriority.High));
 
         Assert.Equal(high, (await DequeueAsync()).ItemId);
         Assert.Equal(normal, (await DequeueAsync()).ItemId);
@@ -114,14 +114,14 @@ public sealed class ResolveQueueTests : IDisposable
     }
 
     [Theory]
-    [InlineData(ResolvePriority.High, ResolvePriority.Normal)]
-    [InlineData(ResolvePriority.Normal, ResolvePriority.High)]
-    public async Task RepeatedItem_UsesHighestPriority(params ResolvePriority[] priorities)
+    [InlineData(QueuePriority.High, QueuePriority.Normal)]
+    [InlineData(QueuePriority.Normal, QueuePriority.High)]
+    public async Task RepeatedItem_UsesHighestPriority(params QueuePriority[] priorities)
     {
         Guid other = Guid.NewGuid();
         Guid repeated = Guid.NewGuid();
 
-        _queue.Enqueue(Item(other, EnglishLocale, ResolvePriority.Normal));
+        _queue.Enqueue(Item(other, EnglishLocale, QueuePriority.Normal));
         foreach (var priority in priorities)
         {
             _queue.Enqueue(Item(repeated, EnglishLocale, priority));
@@ -129,7 +129,7 @@ public sealed class ResolveQueueTests : IDisposable
 
         var dequeued = await DequeueAsync();
         Assert.Equal(repeated, dequeued.ItemId);
-        Assert.Equal(ResolvePriority.High, dequeued.Priority);
+        Assert.Equal(QueuePriority.High, dequeued.Priority);
         Assert.Equal(other, (await DequeueAsync()).ItemId);
         await AssertQueueIsEmptyAsync();
     }
@@ -140,9 +140,9 @@ public sealed class ResolveQueueTests : IDisposable
         Guid high = Guid.NewGuid();
         Guid raised = Guid.NewGuid();
 
-        _queue.Enqueue(Item(raised, EnglishLocale, ResolvePriority.Normal));
-        _queue.Enqueue(Item(high, EnglishLocale, ResolvePriority.High));
-        _queue.Enqueue(Item(raised, EnglishLocale, ResolvePriority.High));
+        _queue.Enqueue(Item(raised, EnglishLocale, QueuePriority.Normal));
+        _queue.Enqueue(Item(high, EnglishLocale, QueuePriority.High));
+        _queue.Enqueue(Item(raised, EnglishLocale, QueuePriority.High));
 
         Assert.Equal(high, (await DequeueAsync()).ItemId);
         Assert.Equal(raised, (await DequeueAsync()).ItemId);

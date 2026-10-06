@@ -53,7 +53,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// </summary>
     /// <typeparam name="TItem">The item's concrete type, e.g. Movie, Season or Episode.</typeparam>
     /// <typeparam name="TInfo">The lookup info type for TItem, e.g. MovieInfo or EpisodeInfo.</typeparam>
-    /// <param name="item">The library item to resolve.</param>
+    /// <param name="item">The library item to fetch metadata for.</param>
     /// <param name="locale">
     /// The locale to request, or null to use the library's own language.
     /// </param>
