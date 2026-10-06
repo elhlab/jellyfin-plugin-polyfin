@@ -1,6 +1,6 @@
 services:
   jellyfin:
-    image: jellyfin/jellyfin:latest
+    image: jellyfin/jellyfin:12.2
     container_name: polyfin-test-jellyfin
     # Rebuilds the fake library in /media (see scripts/seed-media.sh), then starts Jellyfin as usual.
     entrypoint:
@@ -14,7 +14,5 @@ services:
       - ./docker/cache:/cache
       - ./docker/media:/media
       - ./scripts/seed-media.sh:/seed-media.sh:ro
-      # Drop-in plugin mount: rebuild the plugin (dotnet build), then just
-      # restart this container to pick up the new DLL. Must be read-write -
-      # Jellyfin writes its own meta.json into this folder on first load.
-      - ./Jellyfin.Plugin.Polyfin/bin/Debug/net10.0:/config/plugins/Polyfin
+      # Must be read-write, as Jellyfin writes meta.json here.
+      - ./docker/plugin:/config/plugins/Polyfin
