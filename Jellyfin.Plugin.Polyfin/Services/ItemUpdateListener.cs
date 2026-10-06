@@ -51,6 +51,12 @@ public class ItemUpdateListener(
             return;
         }
 
+        // No provider ids yet. Jellyfin raises another update if and when it finds them.
+        if (e.Item.ProviderIds.Count == 0)
+        {
+            return;
+        }
+
         _logger.LogDebug("{Item} metadata changed ({Reason}), queued for refreshing", e.Item.Name, e.UpdateReason);
 
         // Refetch even if stored: the item may have been re-identified with new provider ids.
