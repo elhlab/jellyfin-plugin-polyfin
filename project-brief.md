@@ -12,28 +12,39 @@ Plugin integrates directly into jellyfin modifying responses
 5. modify response content with the fetched language
 
 
-### Scope
+### First milestone
 
-- Movie metadata
-- jellyfin plugin config (static, eg requiring reload to update)
-- Scheduled task that resolves and caches metadata in the background for
-  every movie x admin-configured locale.
+- [x] Movie metadata
+- [x] jellyfin plugin config (static, eg requiring reload to update)
+- [x] Scheduled task that refreshes metadata for every movie x configured locale.
 
 ### Future
 
-- Series metadata
-- User selectable locale
-- Default language set to a configured language (e.g. Deutsch) instead of the library's own.
-- Better test coverage
-- Re-fetch partial metadata after n time.
-- Explore spoofing default audio track based on user locale
-- Testing against the docker-compose Jellyfin instance
+#### Soon
+
+- [ ] Translated taglines (small)
+- [ ] Re-fetch partial metadata after n time (medium)
+
+#### Later
+
+- [ ] Series metadata (large)
+- [ ] User selectable locale (large)
+- [ ] Default language set to a configured language (e.g. Deutsch) instead of the library's own (medium)
+- [ ] Localized posters (large)
+- [ ] Explore spoofing default audio track based on user locale (unknown)
+
+#### When I get to them
+
+- [ ] Skip refetching when an item update didn't change its match (medium)
+- [ ] Settings page hint: new languages are fetched on the next scheduled refresh (small)
+- [ ] Advanced settings: worker count and wait interval (medium)
+- [ ] Smoke-test script against the dev Jellyfin (large)
+- [ ] Better test coverage (large)
 
 ### Known issues and problems
 
 - Search stays in the library's original/stored language, not the
   translated one a viewer sees.
-- Images/posters aren't localized.
 - Sort order and alphabetical browse position don't follow the translated
   title.
 - Offline/synced copies bake in whatever language was active at sync time.
