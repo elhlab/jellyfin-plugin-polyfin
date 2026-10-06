@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using Jellyfin.Plugin.Polyfin.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Polyfin;
 
 /// <summary>
-/// The main plugin.
+/// The Polyfin plugin entry point.
 /// </summary>
 public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
@@ -19,14 +21,19 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// </summary>
     /// <param name="applicationPaths">Instance of the <see cref="IApplicationPaths"/> interface.</param>
     /// <param name="xmlSerializer">Instance of the <see cref="IXmlSerializer"/> interface.</param>
-    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
+    /// <param name="logger">Instance of the <see cref="ILogger{Plugin}"/> interface.</param>
+    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILogger<Plugin> logger)
         : base(applicationPaths, xmlSerializer)
     {
-        // Built directly by PluginManager via reflection, before the DI
-        // (Dependency Injection) container exists - so DI can't inject Plugin
-        // elsewhere. Instance is the escape hatch other code uses to reach it
-        // (e.g. Plugin.Instance.DataFolderPath).
         Instance = this;
+
+        var version = typeof(Plugin).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
+        logger.LogInformation(
+            "Polyfin {Version} loaded, debug logging {DebugLogging}",
+            version,
+            logger.IsEnabled(LogLevel.Debug) ? "on" : "off");
     }
 
     /// <inheritdoc />
