@@ -2,8 +2,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Polyfin.Models;
 using Jellyfin.Plugin.Polyfin.Services;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Dto;
 
 namespace Jellyfin.Plugin.Polyfin.Transformers;
@@ -23,15 +21,16 @@ public class MovieTransformer(MetadataResolver metadataResolver)
     /// <param name="locale">Resolved user locale.</param>
     /// <param name="cancellationToken">A token to observe for cancellation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task Transform(BaseItemDto movieItem, Locale locale, CancellationToken cancellationToken)
+    public Task Transform(BaseItemDto movieItem, Locale locale, CancellationToken cancellationToken)
     {
-        var resolved = await _metadataResolver.ResolveAsync<Movie, MovieInfo>(movieItem.Id, locale, cancellationToken).ConfigureAwait(false);
-        if (resolved is null)
+        var metadata = _metadataResolver.Find(movieItem.Id, locale);
+        if (metadata is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        movieItem.Name = resolved.Name ?? movieItem.Name;
-        movieItem.Overview = resolved.Overview ?? movieItem.Overview;
+        movieItem.Name = metadata.Name ?? movieItem.Name;
+        movieItem.Overview = metadata.Overview ?? movieItem.Overview;
+        return Task.CompletedTask;
     }
 }

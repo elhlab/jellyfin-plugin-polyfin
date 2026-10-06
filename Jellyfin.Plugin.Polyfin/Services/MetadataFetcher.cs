@@ -36,7 +36,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// <exception cref="MetadataFetchException">
     /// The id does not refer to a <typeparamref name="TItem"/>, or the result is incomplete and a provider failed.
     /// </exception>
-    public async Task<FetchedMetadata?> FetchMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
+    public virtual async Task<FetchedMetadata?> FetchMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
         where TItem : BaseItem, IHasLookupInfo<TInfo>
         where TInfo : ItemLookupInfo, new()
     {
