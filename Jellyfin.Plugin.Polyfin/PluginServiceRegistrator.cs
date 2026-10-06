@@ -37,11 +37,12 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
             callback => Plugin.Instance!.ConfigurationChanged += (_, configuration) => callback((PluginConfiguration)configuration),
             serviceProvider.GetRequiredService<ILogger<LanguageResolver>>()));
 
-        // Lives next to the plugin's config XML rather than in DataFolderPath, which
-        // has the assembly version in its name and would orphan the db on every update.
+        // In Jellyfin's data folder, as the official plugins do. The plugins folder doesn't seem
+        // the most stable place at the moment.
+        // https://github.com/jellyfin/jellyfin/issues/17699
         serviceCollection.AddSingleton(serviceProvider =>
         {
-            var dataFolderPath = Path.Join(serviceProvider.GetRequiredService<IApplicationPaths>().PluginConfigurationsPath, "Polyfin");
+            var dataFolderPath = Path.Join(serviceProvider.GetRequiredService<IApplicationPaths>().DataPath, "polyfin");
             Directory.CreateDirectory(dataFolderPath);
             return new MetadataStore(dataFolderPath);
         });
