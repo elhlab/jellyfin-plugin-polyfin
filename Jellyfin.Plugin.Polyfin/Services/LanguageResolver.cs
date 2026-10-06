@@ -27,6 +27,11 @@ public class LanguageResolver
     }
 
     /// <summary>
+    /// Gets the configured languages.
+    /// </summary>
+    public IEnumerable<Language> Languages => _languages.ById.Values;
+
+    /// <summary>
     /// Matches a configured language against the client's accepted languages.
     /// Each accepted locale is tried in quality order, first exactly and then
     /// by language only.

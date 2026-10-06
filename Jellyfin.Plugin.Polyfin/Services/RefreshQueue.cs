@@ -48,7 +48,10 @@ public sealed class RefreshQueue : IDisposable
     /// places it after existing entries at that priority.
     /// </summary>
     /// <param name="item">The item to queue.</param>
-    /// <returns>Whether the item was not queued before in this locale.</returns>
+    /// <returns>
+    /// True if the item was added; false if it was already queued in this locale,
+    /// in which case its existing entry may have been updated.
+    /// </returns>
     public bool Enqueue(QueuedItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
