@@ -1,14 +1,26 @@
 name: '🔬 Run CodeQL'
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
 
 jobs:
   call:
+    # CodeQL needs a public repo; this skips the scan until then.
+    if: github.event.repository.visibility == 'public'
     permissions:
       security-events: write
       actions: read
       contents: read
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@master
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/scan-codeql.yaml@5ebf9f9455736773ab6f94cdb19fb903ece41b83 # master 2026-10-06
     with:
       repository-name: elhlab/jellyfin-plugin-polyfin

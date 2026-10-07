@@ -1,0 +1,59 @@
+name: '📦 Draft Release'
+
+# Run by hand from the Actions tab. Reads the version from build.yaml, builds the plugin zip
+# and creates a draft `v<version>` release with the zip and notes generated from merged PRs.
+# Edit the notes on GitHub, then publish the draft to run the Publish Plugin workflow.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check Branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Draft releases from main, not $GITHUB_REF_NAME."
+          exit 1
+
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read Version
+        run: echo "TAG=v$(yq '.version' build.yaml)" >> "$GITHUB_ENV"
+
+      # Also finds drafts, so running twice doesn't create a second draft.
+      - name: Check Version Is New
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::error::A release or draft for $TAG already exists. Bump the version in build.yaml, or delete the old draft."
+            exit 1
+          fi
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Test
+        run: dotnet test --configuration Release
+
+      - name: Build Jellyfin Plugin
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d # v1.1.1
+        id: jprm
+        with:
+          dotnet-target: 'net10.0'
+
+      - name: Create Draft Release
+        run: |
+          gh release create "$TAG" "${{ steps.jprm.outputs.artifact }}" \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --generate-notes

@@ -1,18 +1,86 @@
 name: '🚀 Publish Plugin'
 
+# Runs when a release is published (usually a draft from the Draft Release workflow). Adds the
+# release to manifest.json on the `manifest` branch, using the release notes as the changelog.
+# Users add that file's raw URL as a plugin repository in Jellyfin.
+
 on:
   release:
     types:
       - released
-  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Queue publishes so two releases don't race to push the manifest.
+concurrency:
+  group: manifest
+  cancel-in-progress: false
 
 jobs:
-  call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/publish.yaml@master
-    with:
-      version: ${{ github.event.release.tag_name }}
-      is-unstable: ${{ github.event.release.prerelease }}
-    secrets:
-      deploy-host: ${{ secrets.DEPLOY_HOST }}
-      deploy-user: ${{ secrets.DEPLOY_USER }}
-      deploy-key: ${{ secrets.DEPLOY_KEY }}
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name }}
+      NOTES: ${{ github.event.release.body }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check Tag Matches Version
+        run: |
+          expected="v$(yq '.version' build.yaml)"
+          if [[ "$TAG" != "$expected" ]]; then
+            echo "::error::Tag $TAG doesn't match build.yaml version ($expected)."
+            exit 1
+          fi
+
+      - name: Download Release Zip
+        run: gh release download "$TAG" --pattern '*.zip' --dir "$RUNNER_TEMP/release"
+
+      - name: Prepare Manifest Entry
+        run: |
+          zip=$(ls "$RUNNER_TEMP"/release/*.zip)
+
+          yq -o=json '{
+            "guid": .guid,
+            "name": .name,
+            "description": .description,
+            "overview": .overview,
+            "owner": .owner,
+            "category": .category
+          }' build.yaml > "$RUNNER_TEMP/plugin.json"
+
+          jq -n \
+            --arg version "$(yq '.version' build.yaml)" \
+            --arg changelog "$NOTES" \
+            --arg targetAbi "$(yq '.targetAbi' build.yaml)" \
+            --arg sourceUrl "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$(basename "$zip")" \
+            --arg checksum "$(md5sum "$zip" | cut -d ' ' -f 1)" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '$ARGS.named' > "$RUNNER_TEMP/version.json"
+
+      - name: Update Manifest
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if git fetch --depth=1 origin manifest:manifest; then
+            git switch manifest
+          else
+            git switch --orphan manifest
+            echo '[]' > manifest.json
+          fi
+
+          # Refresh the plugin details, then put this version first.
+          jq --slurpfile plugin "$RUNNER_TEMP/plugin.json" --slurpfile version "$RUNNER_TEMP/version.json" '
+            (if length == 0 then [{"versions": []}] else . end)
+            | .[0] += $plugin[0]
+            | .[0].versions = $version + .[0].versions
+          ' manifest.json > "$RUNNER_TEMP/manifest.json"
+          mv "$RUNNER_TEMP/manifest.json" manifest.json
+
+          git add manifest.json
+          git commit -m "Add $TAG to manifest"
+          git push origin manifest
