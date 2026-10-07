@@ -35,6 +35,7 @@ Plugin integrates directly into jellyfin modifying responses
 
 #### When I get to them
 
+- [ ] Clean up metadata via a scan and an event handler (medium)
 - [ ] Skip refetching when an item update didn't change its match (medium)
 - [ ] Settings page hint: new languages are fetched on the next scheduled refresh (small)
 - [ ] Advanced settings: worker count and wait interval (medium)
