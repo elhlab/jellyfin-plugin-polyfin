@@ -1,9 +1,13 @@
 <Project>
-    <!-- Read the version from build.yaml so dev builds match releases. -->
     <PropertyGroup>
         <BuildYaml>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)build.yaml'))</BuildYaml>
         <BuildYamlVersion>$([System.Text.RegularExpressions.Regex]::Match($(BuildYaml), '(?m)^version:\s*["\x27]?([^"\x27\s#]+)').Groups[1].Value)</BuildYamlVersion>
         <Version>$(BuildYamlVersion)</Version>
+        <TargetFramework>$([System.Text.RegularExpressions.Regex]::Match($(BuildYaml), '(?m)^framework:\s*["\x27]?([^"\x27\s#]+)').Groups[1].Value)</TargetFramework>
+        <!-- targetAbi is "12.0.0.0"; the Jellyfin packages are versioned "12.0.0". -->
+        <JellyfinVersion>$([System.Text.RegularExpressions.Regex]::Match($(BuildYaml), '(?m)^targetAbi:\s*["\x27]?(\d+\.\d+\.\d+)').Groups[1].Value)</JellyfinVersion>
+        <!-- Must never exceed the version bundled with the targetAbi Jellyfin. -->
+        <JellyfinSqliteVersion>10.0.11</JellyfinSqliteVersion>
     </PropertyGroup>
 
     <Target Name="CheckBuildYamlVersion" BeforeTargets="Build" Condition="'$(BuildYamlVersion)' == ''">
