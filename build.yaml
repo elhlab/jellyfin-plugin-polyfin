@@ -2,7 +2,7 @@
 name: "Polyfin"
 guid: "b8c970d4-41d3-4dec-9c37-b37536f36f77"
 version: "0.1.0.0"
-targetAbi: "12.1.0.0"
+targetAbi: "12.0.0.0"
 framework: "net10.0"
 overview: "Per-user metadata language across your libraries"
 description: >
