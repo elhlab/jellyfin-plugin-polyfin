@@ -6,6 +6,12 @@
 #           git worktree, so the working tree and staged changes are never touched.
 set -euo pipefail
 
+if ! command -v docker >/dev/null; then
+    echo "Docker not found. This script builds for the dev Jellyfin container;" >&2
+    echo "to just build the plugin, see \"Build from source\" in the README." >&2
+    exit 1
+fi
+
 cd "$(dirname "$0")/.."
 repo=$(pwd)
 
@@ -38,8 +44,12 @@ dotnet build "$source/Jellyfin.Plugin.Polyfin" -c Debug -o "$out" -p:SourceRevis
 
 # Only ask when run from a terminal, so a non-interactive run just builds.
 if [[ -t 0 ]]; then
-    read -r -p "Restart dev Jellyfin to load it? [y/N] " answer
+    read -r -p "(Re)start dev container to load the plugin? [y/N] " answer
     if [[ "$answer" == [yY] ]]; then
-        docker compose restart jellyfin
+        if [[ -n "$(docker compose ps --status running -q jellyfin)" ]]; then
+            docker compose restart jellyfin
+        else
+            docker compose up -d jellyfin
+        fi
     fi
 fi
