@@ -1,11 +1,11 @@
 # Polyfin
 
-[![Build](https://github.com/elhlab/jellyfin-plugin-polyfin/actions/workflows/build.yaml/badge.svg?branch=main)](https://github.com/elhlab/jellyfin-plugin-polyfin/actions/workflows/build.yaml)
-[![Test](https://github.com/elhlab/jellyfin-plugin-polyfin/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/elhlab/jellyfin-plugin-polyfin/actions/workflows/test.yaml)
-![Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Felhlab%2Fjellyfin-plugin-polyfin%2Fmain%2Fbuild.yaml&query=%24.version&label=version&color=orange)
+[![Build](https://img.shields.io/github/actions/workflow/status/elhlab/jellyfin-plugin-polyfin/build.yaml?branch=main&label=Build)](https://github.com/elhlab/jellyfin-plugin-polyfin/actions/workflows/build.yaml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/elhlab/jellyfin-plugin-polyfin/test.yaml?branch=main&label=Tests)](https://github.com/elhlab/jellyfin-plugin-polyfin/actions/workflows/test.yaml)
+![Version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Felhlab%2Fjellyfin-plugin-polyfin%2Fmain%2Fbuild.yaml&query=%24.version&label=Version&color=orange)
 [![Jellyfin 12.0+](https://img.shields.io/badge/Jellyfin-12.0%2B-AA5CC3)](https://jellyfin.org)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com)
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue)](LICENSE)
 
 Polyfin fetches and stores metadata in the languages you configure, so users can share one Jellyfin library while each seeing metadata in their own language.
 
