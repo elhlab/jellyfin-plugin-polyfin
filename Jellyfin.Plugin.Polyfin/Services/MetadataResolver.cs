@@ -33,8 +33,8 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
     /// <remarks>
     /// If no provider has a translation, empty metadata is stored so the item isn't fetched again.
     /// If nothing was found and a provider failed, the store is left unchanged and a warning is logged, so the
-    /// item is retried later. Partial results are stored even if a provider failed. If the item no longer
-    /// exists, nothing is stored.
+    /// item is retried later. If a provider failed, partial results only update the stored metadata, so
+    /// fields that are missing keep their values. If the item no longer exists, nothing is stored.
     /// </remarks>
     /// <example>
     /// Refresh metadata for a movie:
@@ -72,7 +72,16 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
             return;
         }
 
-        SaveMetadata(Metadata.FromFetched(itemId, fetched.Metadata), locale);
+        var metadata = Metadata.FromFetched(itemId, fetched.Metadata).ToStored(locale);
+        if (fetched.HadFailures)
+        {
+            // A failed provider might have had the missing fields, so keep the ones already stored.
+            _metadataStore.Fill(metadata);
+        }
+        else
+        {
+            _metadataStore.Replace(metadata);
+        }
     }
 
     /// <summary>
@@ -111,9 +120,4 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
 
     // TODO: Refetch partial or stale metadata once completeness and fetched_at are tracked.
     private static bool NeedsRefresh(StoredMetadata? stored) => stored is null;
-
-    private void SaveMetadata(Metadata metadata, Locale locale)
-    {
-        _metadataStore.Set(metadata.ToStored(locale));
-    }
 }

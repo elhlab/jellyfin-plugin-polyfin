@@ -87,7 +87,7 @@ public class MetadataStore
     /// Stores metadata for an item and locale, overwriting any existing row for that pair.
     /// </summary>
     /// <param name="metadata">The metadata to store.</param>
-    public void Set(StoredMetadata metadata)
+    public void Replace(StoredMetadata metadata)
     {
         using var connection = new SqliteConnection(_connectionString);
         connection.Open();
@@ -97,6 +97,30 @@ public class MetadataStore
             """
             INSERT OR REPLACE INTO metadata ("guid", "locale", "name", "overview", "tagline")
             VALUES ($guid, $locale, $name, $overview, $tagline)
+            """;
+        WriteParameters(command, metadata);
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Stores metadata for an item and locale, keeping the stored value of any field that is
+    /// <see langword="null"/> in <paramref name="metadata"/>.
+    /// </summary>
+    /// <param name="metadata">The metadata to store.</param>
+    public void Fill(StoredMetadata metadata)
+    {
+        using var connection = new SqliteConnection(_connectionString);
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO metadata ("guid", "locale", "name", "overview", "tagline")
+            VALUES ($guid, $locale, $name, $overview, $tagline)
+            ON CONFLICT ("guid", "locale") DO UPDATE SET
+                "name" = COALESCE(excluded."name", "name"),
+                "overview" = COALESCE(excluded."overview", "overview"),
+                "tagline" = COALESCE(excluded."tagline", "tagline")
             """;
         WriteParameters(command, metadata);
         command.ExecuteNonQuery();

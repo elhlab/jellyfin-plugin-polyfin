@@ -17,27 +17,48 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void Set_ThenGet_RoundTrips()
+    public void Get_ReturnsReplacedMetadata()
     {
         var itemId = Guid.NewGuid();
         var metadata = new StoredMetadata(itemId, German, "Der Titel", "Die Beschreibung", "Der Slogan");
 
-        _store.Set(metadata);
+        _store.Replace(metadata);
 
         Assert.Equal(metadata, _store.Get(itemId, German));
         Assert.Null(_store.Get(itemId, new Locale("de", null)));
     }
 
     [Fact]
-    public void Set_OverwritesExistingRow()
+    public void Replace_OverwritesExistingRow()
     {
         var itemId = Guid.NewGuid();
         var updated = new StoredMetadata(itemId, German, "Neuer Titel", null, null);
 
-        _store.Set(new StoredMetadata(itemId, German, "Alter Titel", "Alte Beschreibung", "Alter Slogan"));
-        _store.Set(updated);
+        _store.Replace(new StoredMetadata(itemId, German, "Alter Titel", "Alte Beschreibung", "Alter Slogan"));
+        _store.Replace(updated);
 
         Assert.Equal(updated, _store.Get(itemId, German));
+    }
+
+    [Fact]
+    public void Fill_UpdatesWithoutClearing()
+    {
+        var itemId = Guid.NewGuid();
+
+        _store.Replace(new StoredMetadata(itemId, German, "Alter Titel", "Alte Beschreibung", "Alter Slogan"));
+        _store.Fill(new StoredMetadata(itemId, German, "Neuer Titel", null, null));
+
+        Assert.Equal(new StoredMetadata(itemId, German, "Neuer Titel", "Alte Beschreibung", "Alter Slogan"), _store.Get(itemId, German));
+    }
+
+    [Fact]
+    public void Fill_InsertsMissingRow()
+    {
+        var metadata = new StoredMetadata(Guid.NewGuid(), German, "Der Titel", "Die Beschreibung", "Der Slogan");
+
+        _store.Fill(metadata);
+
+        Assert.Equal(metadata, _store.Get(metadata.Guid, German));
     }
 
     [Fact]
@@ -46,9 +67,9 @@ public sealed class MetadataStoreTests : IDisposable
         var first = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
         var second = new StoredMetadata(Guid.NewGuid(), German, null, null, null);
 
-        _store.Set(first);
-        _store.Set(second);
-        _store.Set(new StoredMetadata(Guid.NewGuid(), new Locale("fr", "FR"), "Titre", null, null));
+        _store.Replace(first);
+        _store.Replace(second);
+        _store.Replace(new StoredMetadata(Guid.NewGuid(), new Locale("fr", "FR"), "Titre", null, null));
 
         Assert.Equivalent(new[] { first, second }, _store.Enumerate(German), strict: true);
     }
