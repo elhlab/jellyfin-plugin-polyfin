@@ -50,6 +50,15 @@ While Jellyfin supports multiple interface languages, the library metadata is st
 It should be noted that there is a reason Jellyfin has not done this. It would be a very large change that touches a lot of Jellyfin's internals. So why can a plugin do it? A plugin works on top of Jellyfin and can live with some gaps, especially the niche ones (see the [feature tables](#what-it-does)). Jellyfin itself would have to fix them all.
 
 
+## Alternatives
+
+### Polyglot
+
+[Polyglot](https://github.com/Maronato/jellyfin-plugin-polyglot) takes a different approach. It creates a mirror library for each language, with hardlinks to the same media files, and each mirror gets its own metadata in that language. Users only see the libraries in their language. If you need multi-language metadata right now, it's probably the better choice.
+
+The tradeoff is that every language is its own library with its own scans, and the mirrors have to be on the same filesystem as the media. Polyfin keeps one library and only changes what each client is shown.
+
+
 ## Getting started
 
 There is no release yet, so for now the plugin has to be built from source and installed manually.
