@@ -11,9 +11,14 @@ namespace Jellyfin.Plugin.Polyfin.Models;
 public sealed record FetchedMetadata(string? Name, string? Overview, string? Tagline)
 {
     /// <summary>
-    /// Gets a value indicating whether the metadata is fully filled, so no further providers need to be asked.
+    /// Gets a value indicating whether every field is filled.
     /// </summary>
-    public bool IsFullyFilled => Name is not null && Overview is not null && Tagline is not null;
+    public bool IsComplete => Name is not null && Overview is not null && Tagline is not null;
+
+    /// <summary>
+    /// Gets a value indicating whether no field is filled.
+    /// </summary>
+    public bool IsEmpty => Name is null && Overview is null && Tagline is null;
 
     /// <summary>
     /// Updates the fields from <paramref name="item"/> while keeping existing fields intact.

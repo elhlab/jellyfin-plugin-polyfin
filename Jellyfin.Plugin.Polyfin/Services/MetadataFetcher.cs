@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Polyfin.Models;
@@ -31,12 +30,13 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// </param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>
-    /// The merged metadata, or null if no provider returned metadata in the requested language.
+    /// The merged metadata, empty if no provider returned metadata in the requested language,
+    /// and whether any provider failed or timed out.
     /// </returns>
-    /// <exception cref="MetadataFetchException">
-    /// The id does not refer to a <typeparamref name="TItem"/>, or the result is incomplete and a provider failed.
+    /// <exception cref="FetchItemNotFoundException">
+    /// The id does not refer to a <typeparamref name="TItem"/>.
     /// </exception>
-    public virtual async Task<FetchedMetadata?> FetchMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
+    public virtual async Task<(FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
         where TItem : BaseItem, IHasLookupInfo<TInfo>
         where TInfo : ItemLookupInfo, new()
     {
@@ -45,7 +45,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
             return await FetchMetadataAsync<TItem, TInfo>(item, locale, cancellationToken).ConfigureAwait(false);
         }
 
-        throw new MetadataFetchException($"Item {itemId} not found or not a {typeof(TItem).Name}");
+        throw new FetchItemNotFoundException($"Item {itemId} not found or not a {typeof(TItem).Name}");
     }
 
     /// <summary>
@@ -59,12 +59,10 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// </param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>
-    /// The merged metadata, or null if no provider returned metadata in the requested language.
+    /// The merged metadata, empty if no provider returned metadata in the requested language,
+    /// and whether any provider failed or timed out.
     /// </returns>
-    /// <exception cref="MetadataFetchException">
-    /// The result is incomplete and a provider failed, so a better result may exist.
-    /// </exception>
-    public async Task<FetchedMetadata?> FetchMetadataAsync<TItem, TInfo>(TItem item, Locale? locale, CancellationToken cancellationToken)
+    public async Task<(FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(TItem item, Locale? locale, CancellationToken cancellationToken)
         where TItem : BaseItem, IHasLookupInfo<TInfo>
         where TInfo : ItemLookupInfo, new()
     {
@@ -79,8 +77,8 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
 
         var providerTimeout = TimeSpan.FromSeconds(Plugin.Instance!.Configuration.ProviderTimeoutSeconds);
 
-        FetchedMetadata? merged = null;
-        var failures = new List<Exception>();
+        var merged = new FetchedMetadata(null, null, null);
+        var hadFailures = false;
         foreach (var provider in _providerManager.GetMetadataProviders<TItem>(item, libraryOptions))
         {
             if (provider is not IRemoteMetadataProvider<TItem, TInfo> remote)
@@ -106,32 +104,26 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
                     continue;
                 }
 
-                merged = (merged ?? new FetchedMetadata(null, null, null)).FillFrom(result.Item);
+                merged = merged.FillFrom(result.Item);
 
-                if (merged.IsFullyFilled)
+                if (merged.IsComplete)
                 {
                     break;
                 }
             }
-            catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                failures.Add(ex);
+                hadFailures = true;
                 _logger.LogWarning("{Provider} timed out after {Timeout} for {Item}, trying next provider", provider.Name, providerTimeout, item.Name);
             }
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
-                failures.Add(ex);
+                hadFailures = true;
                 _logger.LogWarning(ex, "{Provider} failed for {Item}, trying next provider", provider.Name, item.Name);
             }
         }
 
-        // A failed provider might have had the missing fields.
-        if (merged?.IsFullyFilled != true && failures.Count > 0)
-        {
-            throw new MetadataFetchException($"Providers failed for {item.Name}", new AggregateException(failures));
-        }
-
-        return merged;
+        return (merged, hadFailures);
     }
 
     /// <summary>
