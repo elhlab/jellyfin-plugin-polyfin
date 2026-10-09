@@ -20,7 +20,7 @@ This project is currently a work in progress. The core is implemented and works 
 | --- | :---: | :---: | :---: |
 | Title | ✅ | 🚧 | 🚧 |
 | Description | ✅ | 🚧 | 🚧 |
-| Tagline | 🚧 | 🚧 | — |
+| Tagline | ✅ | 🚧 | — |
 | Season name | — | 🚧 | — |
 | Library name | 🚧 | 🚧 | — |
 | Posters | 🚧 | 🚧 | — |
@@ -111,7 +111,6 @@ If no metadata is found for the user's configured language, the plugin won't mod
 
 ### Soon
 
-- [ ] Translated taglines (small)
 - [ ] Re-fetch partial metadata after some time (medium)
 - [ ] Admin configured library names (medium)
 
@@ -144,6 +143,8 @@ You can start up a Jellyfin instance with the provided Docker Compose file to te
 ```
 
 Needs Docker. It runs on http://localhost:8096 with a fake library from `scripts/seed-media.sh`. On the first start, go through Jellyfin's setup wizard and add `/media/movies` and `/media/series` as libraries.
+
+The database schema can still change before the first release. If the plugin fails after pulling, delete `docker/config/data/polyfin/metadata.db` and restart the container.
 
 `scripts/dev-logs.sh` can be used to show the log lines related to the plugin.
 

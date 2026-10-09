@@ -31,6 +31,13 @@ public class MovieTransformer(MetadataResolver metadataResolver)
 
         movieItem.Name = metadata.Name ?? movieItem.Name;
         movieItem.Overview = metadata.Overview ?? movieItem.Overview;
+
+        if (movieItem.Taglines is not null && metadata.Tagline is not null)
+        {
+            // TODO: maybe advanced config to make it drop taglines if they are not translated.
+            movieItem.Taglines = [metadata.Tagline];
+        }
+
         return Task.CompletedTask;
     }
 }

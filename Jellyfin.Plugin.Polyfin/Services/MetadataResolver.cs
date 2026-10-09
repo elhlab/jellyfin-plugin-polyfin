@@ -63,7 +63,7 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
             return;
         }
 
-        fetchedMetadata ??= new FetchedMetadata(null, null);
+        fetchedMetadata ??= new FetchedMetadata(null, null, null);
         SaveMetadata(Metadata.FromFetched(itemId, fetchedMetadata), locale);
     }
 
