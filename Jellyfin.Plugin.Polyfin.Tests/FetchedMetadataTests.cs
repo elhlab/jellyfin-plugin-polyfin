@@ -38,8 +38,18 @@ public class FetchedMetadataTests
     [InlineData("Der Titel", null, "Der Slogan", false)]
     [InlineData(null, "Die Beschreibung", null, false)]
     [InlineData(null, null, "Der Slogan", false)]
-    public void IsFullyFilled_RequiresAllFields(string? name, string? overview, string? tagline, bool expected)
+    public void IsComplete_WhenAllFieldsSet(string? name, string? overview, string? tagline, bool expected)
     {
-        Assert.Equal(expected, new FetchedMetadata(name, overview, tagline).IsFullyFilled);
+        Assert.Equal(expected, new FetchedMetadata(name, overview, tagline).IsComplete);
+    }
+
+    [Theory]
+    [InlineData(null, null, null, true)]
+    [InlineData("Der Titel", null, null, false)]
+    [InlineData(null, "Die Beschreibung", null, false)]
+    [InlineData(null, null, "Der Slogan", false)]
+    public void IsEmpty_WhenNoFieldsSet(string? name, string? overview, string? tagline, bool expected)
+    {
+        Assert.Equal(expected, new FetchedMetadata(name, overview, tagline).IsEmpty);
     }
 }

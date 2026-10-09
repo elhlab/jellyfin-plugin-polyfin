@@ -44,7 +44,7 @@ public sealed class MetadataResolverTests : IDisposable
     public async Task MissingTranslation_StoresEmptyMetadata()
     {
         var itemId = Guid.NewGuid();
-        _fetcher.Result = null;
+        _fetcher.Result = new FetchedMetadata(null, null, null);
 
         await RefreshMovieAsync(itemId);
 
@@ -76,10 +76,10 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task FailedFetch_StoresNothing()
+    public async Task MissingItem_StoresNothing()
     {
         var itemId = Guid.NewGuid();
-        _fetcher.Fails = true;
+        _fetcher.ItemMissing = true;
 
         await RefreshMovieAsync(itemId);
 
@@ -88,11 +88,47 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task FailedRefetch_KeepsStoredMetadata()
+    public async Task EmptyFetchWithFailures_StoresNothing()
+    {
+        var itemId = Guid.NewGuid();
+        _fetcher.HadFailures = true;
+
+        await RefreshMovieAsync(itemId);
+
+        Assert.Null(_resolver.Find(itemId, German));
+        Assert.Equal(LogLevel.Warning, _logger.LatestRecord.Level);
+    }
+
+    [Fact]
+    public async Task EmptyRefetchWithFailures_KeepsStoredMetadata()
     {
         var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
         _store.Set(stored);
-        _fetcher.Fails = true;
+        _fetcher.HadFailures = true;
+
+        await RefreshMovieAsync(stored.Guid, refetch: true);
+
+        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
+    }
+
+    [Fact]
+    public async Task PartialFetchWithFailures_IsStored()
+    {
+        var itemId = Guid.NewGuid();
+        _fetcher.Result = new FetchedMetadata("Titel", null, null);
+        _fetcher.HadFailures = true;
+
+        await RefreshMovieAsync(itemId);
+
+        Assert.Equal(new Metadata(itemId, "Titel", null, null), _resolver.Find(itemId, German));
+    }
+
+    [Fact]
+    public async Task MissingItemOnRefetch_KeepsStoredMetadata()
+    {
+        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
+        _store.Set(stored);
+        _fetcher.ItemMissing = true;
 
         await RefreshMovieAsync(stored.Guid, refetch: true);
 
@@ -105,7 +141,7 @@ public sealed class MetadataResolverTests : IDisposable
         Guid storedId = Guid.NewGuid();
         Guid missingId = Guid.NewGuid();
 
-        _store.Set(new StoredMetadata(storedId, German, "Titel", null, null));
+        _store.Set(new StoredMetadata(storedId, German, null, null, null));
 
         Assert.Equivalent(new[] { missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], German), strict: true);
         Assert.Equivalent(new[] { storedId, missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], French), strict: true);
@@ -131,26 +167,28 @@ public sealed class MetadataResolverTests : IDisposable
         _folder.Delete(recursive: true);
     }
 
-    // Returns the configured result, or fails, instead of calling real providers.
+    // Returns the configured result, or throws as if the item is missing, instead of calling real providers.
     private sealed class FakeFetcher() : MetadataFetcher(null!, null!, null!)
     {
-        public FetchedMetadata? Result { get; set; }
+        public FetchedMetadata Result { get; set; } = new(null, null, null);
 
-        public bool Fails { get; set; }
+        public bool HadFailures { get; set; }
+
+        public bool ItemMissing { get; set; }
 
         public int Calls { get; private set; }
 
-        public override Task<FetchedMetadata?> FetchMetadataAsync<TItem, TInfo>(
+        public override Task<(FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(
             Guid itemId, Locale? locale, CancellationToken cancellationToken)
         {
             Calls++;
 
-            if (Fails)
+            if (ItemMissing)
             {
-                throw new MetadataFetchException("Fetch failed");
+                throw new FetchItemNotFoundException("Item not found");
             }
 
-            return Task.FromResult(Result);
+            return Task.FromResult((Result, HadFailures));
         }
     }
 }

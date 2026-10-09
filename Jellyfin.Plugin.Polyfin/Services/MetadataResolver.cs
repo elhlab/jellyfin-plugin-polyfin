@@ -32,7 +32,9 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <remarks>
     /// If no provider has a translation, empty metadata is stored so the item isn't fetched again.
-    /// If the fetch fails, the store is left unchanged and a warning is logged, so the item is retried later.
+    /// If nothing was found and a provider failed, the store is left unchanged and a warning is logged, so the
+    /// item is retried later. Partial results are stored even if a provider failed. If the item no longer
+    /// exists, nothing is stored.
     /// </remarks>
     /// <example>
     /// Refresh metadata for a movie:
@@ -49,22 +51,28 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
             return;
         }
 
-        FetchedMetadata? fetchedMetadata;
+        (FetchedMetadata Metadata, bool HadFailures) fetched;
         try
         {
-            fetchedMetadata = await _metadataFetcher.FetchMetadataAsync<TItem, TInfo>(
+            fetched = await _metadataFetcher.FetchMetadataAsync<TItem, TInfo>(
                 itemId, locale, cancellationToken).ConfigureAwait(false);
         }
-        catch (MetadataFetchException ex)
+        catch (FetchItemNotFoundException)
         {
-            // Don't store a failed fetch so the item remains eligible for a future retry.
-            // TODO: Consider storing failed fetches once fetched_at is tracked, to back off retries.
-            _logger.LogWarning("Fetching {ItemId} in {Locale} failed: {Reason}", itemId, locale.ToTag(), ex.Message);
+            _logger.LogWarning("Item {ItemId} not found, nothing stored for {Locale}", itemId, locale.ToTag());
             return;
         }
 
-        fetchedMetadata ??= new FetchedMetadata(null, null, null);
-        SaveMetadata(Metadata.FromFetched(itemId, fetchedMetadata), locale);
+        // An empty result only means "no translation" if no provider failed. Otherwise don't store
+        // it, so the item remains eligible for a future retry.
+        // TODO: Consider storing these once fetched_at is tracked, to back off retries.
+        if (fetched.Metadata.IsEmpty && fetched.HadFailures)
+        {
+            _logger.LogWarning("Nothing found for {ItemId} in {Locale} and a provider failed, retrying later", itemId, locale.ToTag());
+            return;
+        }
+
+        SaveMetadata(Metadata.FromFetched(itemId, fetched.Metadata), locale);
     }
 
     /// <summary>
