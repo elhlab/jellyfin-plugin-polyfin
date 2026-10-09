@@ -106,9 +106,9 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
                     continue;
                 }
 
-                merged = (merged ?? new FetchedMetadata(null, null)).FillFrom(result.Item);
+                merged = (merged ?? new FetchedMetadata(null, null, null)).FillFrom(result.Item);
 
-                if (merged.IsComplete)
+                if (merged.IsFullyFilled)
                 {
                     break;
                 }
@@ -126,7 +126,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
         }
 
         // A failed provider might have had the missing fields.
-        if (merged?.IsComplete != true && failures.Count > 0)
+        if (merged?.IsFullyFilled != true && failures.Count > 0)
         {
             throw new MetadataFetchException($"Providers failed for {item.Name}", new AggregateException(failures));
         }

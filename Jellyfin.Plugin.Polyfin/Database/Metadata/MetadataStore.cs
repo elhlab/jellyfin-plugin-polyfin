@@ -46,7 +46,7 @@ public class MetadataStore
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT "guid", "locale", "name", "overview"
+            SELECT "guid", "locale", "name", "overview", "tagline"
             FROM metadata
             WHERE "guid" = $guid AND "locale" = $locale;
             """;
@@ -70,7 +70,7 @@ public class MetadataStore
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT "guid", "locale", "name", "overview"
+            SELECT "guid", "locale", "name", "overview", "tagline"
             FROM metadata
             WHERE "locale" = $locale;
             """;
@@ -95,8 +95,8 @@ public class MetadataStore
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            INSERT OR REPLACE INTO metadata ("guid", "locale", "name", "overview")
-            VALUES ($guid, $locale, $name, $overview)
+            INSERT OR REPLACE INTO metadata ("guid", "locale", "name", "overview", "tagline")
+            VALUES ($guid, $locale, $name, $overview, $tagline)
             """;
         WriteParameters(command, metadata);
         command.ExecuteNonQuery();
@@ -106,7 +106,9 @@ public class MetadataStore
         Guid.Parse(reader.GetString(reader.GetOrdinal("guid"))),
         Locale.FromTag(reader.GetString(reader.GetOrdinal("locale")))!,
         reader.IsDBNull(reader.GetOrdinal("name")) ? null : reader.GetString(reader.GetOrdinal("name")),
-        reader.IsDBNull(reader.GetOrdinal("overview")) ? null : reader.GetString(reader.GetOrdinal("overview")));
+        reader.IsDBNull(reader.GetOrdinal("overview")) ? null : reader.GetString(reader.GetOrdinal("overview")),
+        reader.IsDBNull(reader.GetOrdinal("tagline")) ? null : reader.GetString(reader.GetOrdinal("tagline"))
+    );
 
     private static void WriteParameters(SqliteCommand command, StoredMetadata metadata)
     {
@@ -114,5 +116,6 @@ public class MetadataStore
         command.Parameters.AddWithValue("$locale", metadata.Locale.ToTag());
         command.Parameters.AddWithValue("$name", (object?)metadata.Name ?? DBNull.Value);
         command.Parameters.AddWithValue("$overview", (object?)metadata.Overview ?? DBNull.Value);
+        command.Parameters.AddWithValue("$tagline", (object?)metadata.Tagline ?? DBNull.Value);
     }
 }

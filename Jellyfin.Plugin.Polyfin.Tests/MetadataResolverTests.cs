@@ -33,11 +33,11 @@ public sealed class MetadataResolverTests : IDisposable
     public async Task FetchedMetadata_IsStored()
     {
         var itemId = Guid.NewGuid();
-        _fetcher.Result = new FetchedMetadata("Titel", "Handlung");
+        _fetcher.Result = new FetchedMetadata("Titel", "Handlung", "Slogan");
 
         await RefreshMovieAsync(itemId);
 
-        Assert.Equal(new Metadata(itemId, "Titel", "Handlung"), _resolver.Find(itemId, German));
+        Assert.Equal(new Metadata(itemId, "Titel", "Handlung", "Slogan"), _resolver.Find(itemId, German));
     }
 
     [Fact]
@@ -48,31 +48,31 @@ public sealed class MetadataResolverTests : IDisposable
 
         await RefreshMovieAsync(itemId);
 
-        Assert.Equal(new Metadata(itemId, null, null), _resolver.Find(itemId, German));
+        Assert.Equal(new Metadata(itemId, null, null, null), _resolver.Find(itemId, German));
     }
 
     [Fact]
     public async Task StoredItem_IsNotFetched()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung");
+        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
         _store.Set(stored);
 
         await RefreshMovieAsync(stored.Guid);
 
         Assert.Equal(0, _fetcher.Calls);
-        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung"), _resolver.Find(stored.Guid, German));
+        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
     }
 
     [Fact]
     public async Task Refetch_ReplacesStoredMetadata()
     {
         var itemId = Guid.NewGuid();
-        _store.Set(new StoredMetadata(itemId, German, "Alter Titel", null));
-        _fetcher.Result = new FetchedMetadata("Neuer Titel", "Handlung");
+        _store.Set(new StoredMetadata(itemId, German, "Alter Titel", null, null));
+        _fetcher.Result = new FetchedMetadata("Neuer Titel", "Handlung", "Slogan");
 
         await RefreshMovieAsync(itemId, refetch: true);
 
-        Assert.Equal(new Metadata(itemId, "Neuer Titel", "Handlung"), _resolver.Find(itemId, German));
+        Assert.Equal(new Metadata(itemId, "Neuer Titel", "Handlung", "Slogan"), _resolver.Find(itemId, German));
     }
 
     [Fact]
@@ -90,13 +90,13 @@ public sealed class MetadataResolverTests : IDisposable
     [Fact]
     public async Task FailedRefetch_KeepsStoredMetadata()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung");
+        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
         _store.Set(stored);
         _fetcher.Fails = true;
 
         await RefreshMovieAsync(stored.Guid, refetch: true);
 
-        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung"), _resolver.Find(stored.Guid, German));
+        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class MetadataResolverTests : IDisposable
         Guid storedId = Guid.NewGuid();
         Guid missingId = Guid.NewGuid();
 
-        _store.Set(new StoredMetadata(storedId, German, "Titel", null));
+        _store.Set(new StoredMetadata(storedId, German, "Titel", null, null));
 
         Assert.Equivalent(new[] { missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], German), strict: true);
         Assert.Equivalent(new[] { storedId, missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], French), strict: true);
@@ -114,13 +114,13 @@ public sealed class MetadataResolverTests : IDisposable
     [Fact]
     public void Find_ReturnsStoredMetadata()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung");
+        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
         _store.Set(stored);
 
         // Ensure Find does not fetch missing metadata.
-        _fetcher.Result = new FetchedMetadata("Fetched", "Fetched");
+        _fetcher.Result = new FetchedMetadata("Fetched", "Fetched", "Fetched");
 
-        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung"), _resolver.Find(stored.Guid, German));
+        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
         Assert.Null(_resolver.Find(stored.Guid, French));
     }
 

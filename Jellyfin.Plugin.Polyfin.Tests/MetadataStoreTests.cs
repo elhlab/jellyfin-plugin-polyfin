@@ -20,7 +20,7 @@ public sealed class MetadataStoreTests : IDisposable
     public void Set_ThenGet_RoundTrips()
     {
         var itemId = Guid.NewGuid();
-        var metadata = new StoredMetadata(itemId, German, "Der Titel", "Die Beschreibung");
+        var metadata = new StoredMetadata(itemId, German, "Der Titel", "Die Beschreibung", "Der Slogan");
 
         _store.Set(metadata);
 
@@ -32,9 +32,9 @@ public sealed class MetadataStoreTests : IDisposable
     public void Set_OverwritesExistingRow()
     {
         var itemId = Guid.NewGuid();
-        var updated = new StoredMetadata(itemId, German, "Neuer Titel", null);
+        var updated = new StoredMetadata(itemId, German, "Neuer Titel", null, null);
 
-        _store.Set(new StoredMetadata(itemId, German, "Alter Titel", "Alte Beschreibung"));
+        _store.Set(new StoredMetadata(itemId, German, "Alter Titel", "Alte Beschreibung", "Alter Slogan"));
         _store.Set(updated);
 
         Assert.Equal(updated, _store.Get(itemId, German));
@@ -43,12 +43,12 @@ public sealed class MetadataStoreTests : IDisposable
     [Fact]
     public void Enumerate_ReturnsRequestedLocale()
     {
-        var first = new StoredMetadata(Guid.NewGuid(), German, "Titel", null);
-        var second = new StoredMetadata(Guid.NewGuid(), German, null, null);
+        var first = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
+        var second = new StoredMetadata(Guid.NewGuid(), German, null, null, null);
 
         _store.Set(first);
         _store.Set(second);
-        _store.Set(new StoredMetadata(Guid.NewGuid(), new Locale("fr", "FR"), "Titre", null));
+        _store.Set(new StoredMetadata(Guid.NewGuid(), new Locale("fr", "FR"), "Titre", null, null));
 
         Assert.Equivalent(new[] { first, second }, _store.Enumerate(German), strict: true);
     }
