@@ -18,12 +18,12 @@ This project is currently a work in progress. The core is implemented and works 
 
 | Translated | Movies | Shows | Episodes |
 | --- | :---: | :---: | :---: |
-| Title | ✅ | 🚧 | 🚧 |
-| Description | ✅ | 🚧 | 🚧 |
-| Tagline | ✅ | 🚧 | — |
-| Season name | — | 🚧 | — |
+| Title | ✅ | 🗓️ | 🗓️ |
+| Description | ✅ | 🗓️ | 🗓️ |
+| Tagline | ✅ | 🗓️ | — |
+| Season name | — | 🗓️ | — |
 | Library name | 🚧 | 🚧 | — |
-| Posters | 🚧 | 🚧 | — |
+| Posters | 🗓️ | 🗓️ | — |
 | Genres, studios, tags | ❌ | ❌ | ❌ |
 | Search and sort | ❌ | ❌ | ❌ |
 
@@ -32,11 +32,11 @@ This project is currently a work in progress. The core is implemented and works 
 | Shows translated metadata | ✅ | ✅ |
 | Language set per user by the admin | ✅ | ✅ |
 | Language detected automatically | ✅ | ❌ |
-| Language picked by the user | 🚧 | 🚧\* |
+| Language picked by the user | 🗓️ | 🗓️\* |
 
 \* Chosen in the web UI, then applies in every app.
 
-✅ Works &emsp; 🚧 Planned &emsp; ❌ Not supported
+✅ Works &emsp; 🚧 Soon &emsp; 🗓️ Later &emsp; ❌ Not supported
 
 See the [roadmap](#roadmap) for what's planned next.
 
@@ -122,7 +122,7 @@ If no metadata is found for the user's configured language, the plugin won't mod
 - [ ] Localized posters (large)
 - [ ] Explore spoofing the default audio track based on user language (unknown)
 
-### When I get to them
+### Eventually
 
 - [ ] Clean up metadata via a scan and an event handler (medium)
 - [ ] Skip refetching when an item update didn't change its match (medium)
