@@ -117,10 +117,10 @@ If no metadata is found for the user's configured language, the plugin won't mod
 ### Later
 
 - [ ] Series metadata (large)
-- [ ] User selectable locale (large)
+- [ ] User selectable language (large)
 - [ ] Default language set to a configured language (e.g. Deutsch) instead of the library's own (medium)
 - [ ] Localized posters (large)
-- [ ] Explore spoofing the default audio track based on user locale (unknown)
+- [ ] Explore spoofing the default audio track based on user language (unknown)
 
 ### When I get to them
 
