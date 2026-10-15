@@ -7,7 +7,6 @@ namespace Jellyfin.Plugin.Polyfin.Tests;
 
 public sealed class RefreshQueueTests : IDisposable
 {
-    private static readonly Locale EnglishLocale = new("en", null);
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
     private readonly RefreshQueue _queue = new();
@@ -46,9 +45,9 @@ public sealed class RefreshQueueTests : IDisposable
         Guid second = Guid.NewGuid();
         Guid third = Guid.NewGuid();
 
-        _queue.Enqueue(Item(first, EnglishLocale));
-        _queue.Enqueue(Item(second, EnglishLocale));
-        _queue.Enqueue(Item(third, EnglishLocale));
+        _queue.Enqueue(Item(first, Samples.German));
+        _queue.Enqueue(Item(second, Samples.German));
+        _queue.Enqueue(Item(third, Samples.German));
 
         Assert.Equal(first, (await DequeueAsync()).ItemId);
         Assert.Equal(second, (await DequeueAsync()).ItemId);
@@ -61,8 +60,8 @@ public sealed class RefreshQueueTests : IDisposable
         Guid normal = Guid.NewGuid();
         Guid high = Guid.NewGuid();
 
-        _queue.Enqueue(Item(normal, EnglishLocale, QueuePriority.Normal));
-        _queue.Enqueue(Item(high, EnglishLocale, QueuePriority.High));
+        _queue.Enqueue(Item(normal, Samples.German, QueuePriority.Normal));
+        _queue.Enqueue(Item(high, Samples.German, QueuePriority.High));
 
         Assert.Equal(high, (await DequeueAsync()).ItemId);
         Assert.Equal(normal, (await DequeueAsync()).ItemId);
@@ -76,9 +75,9 @@ public sealed class RefreshQueueTests : IDisposable
         Guid first = Guid.NewGuid();
         Guid second = Guid.NewGuid();
 
-        _queue.Enqueue(Item(first, EnglishLocale));
-        _queue.Enqueue(Item(second, EnglishLocale));
-        _queue.Enqueue(Item(first, EnglishLocale));
+        _queue.Enqueue(Item(first, Samples.German));
+        _queue.Enqueue(Item(second, Samples.German));
+        _queue.Enqueue(Item(first, Samples.German));
         Assert.Equal(2, _queue.Count);
 
         await DequeueAsync();
@@ -92,8 +91,8 @@ public sealed class RefreshQueueTests : IDisposable
     {
         var itemId = Guid.NewGuid();
 
-        Assert.True(_queue.Enqueue(Item(itemId, EnglishLocale)));
-        Assert.False(_queue.Enqueue(Item(itemId, EnglishLocale)));
+        Assert.True(_queue.Enqueue(Item(itemId, Samples.German)));
+        Assert.False(_queue.Enqueue(Item(itemId, Samples.German)));
 
         Assert.Equal(itemId, (await DequeueAsync()).ItemId);
         await AssertQueueIsEmptyAsync();
@@ -105,9 +104,9 @@ public sealed class RefreshQueueTests : IDisposable
         Guid repeated = Guid.NewGuid();
         Guid other = Guid.NewGuid();
 
-        _queue.Enqueue(Item(repeated, EnglishLocale));
-        _queue.Enqueue(Item(other, EnglishLocale));
-        _queue.Enqueue(Item(repeated, EnglishLocale));
+        _queue.Enqueue(Item(repeated, Samples.German));
+        _queue.Enqueue(Item(other, Samples.German));
+        _queue.Enqueue(Item(repeated, Samples.German));
 
         Assert.Equal(repeated, (await DequeueAsync()).ItemId);
         Assert.Equal(other, (await DequeueAsync()).ItemId);
@@ -121,10 +120,10 @@ public sealed class RefreshQueueTests : IDisposable
         Guid other = Guid.NewGuid();
         Guid repeated = Guid.NewGuid();
 
-        _queue.Enqueue(Item(other, EnglishLocale, QueuePriority.Normal));
+        _queue.Enqueue(Item(other, Samples.German, QueuePriority.Normal));
         foreach (var priority in priorities)
         {
-            _queue.Enqueue(Item(repeated, EnglishLocale, priority));
+            _queue.Enqueue(Item(repeated, Samples.German, priority));
         }
 
         var dequeued = await DequeueAsync();
@@ -140,9 +139,9 @@ public sealed class RefreshQueueTests : IDisposable
         Guid high = Guid.NewGuid();
         Guid raised = Guid.NewGuid();
 
-        _queue.Enqueue(Item(raised, EnglishLocale, QueuePriority.Normal));
-        _queue.Enqueue(Item(high, EnglishLocale, QueuePriority.High));
-        _queue.Enqueue(Item(raised, EnglishLocale, QueuePriority.High));
+        _queue.Enqueue(Item(raised, Samples.German, QueuePriority.Normal));
+        _queue.Enqueue(Item(high, Samples.German, QueuePriority.High));
+        _queue.Enqueue(Item(raised, Samples.German, QueuePriority.High));
 
         Assert.Equal(high, (await DequeueAsync()).ItemId);
         Assert.Equal(raised, (await DequeueAsync()).ItemId);
@@ -157,7 +156,7 @@ public sealed class RefreshQueueTests : IDisposable
 
         foreach (var refetch in refetches)
         {
-            _queue.Enqueue(Item(itemId, EnglishLocale, refetch: refetch));
+            _queue.Enqueue(Item(itemId, Samples.German, refetch: refetch));
         }
 
         Assert.True((await DequeueAsync()).Refetch);
@@ -167,13 +166,12 @@ public sealed class RefreshQueueTests : IDisposable
     public async Task ItemInOtherLocale_IsQueuedSeparately()
     {
         var itemId = Guid.NewGuid();
-        var germanLocale = new Locale("de", null);
 
-        Assert.True(_queue.Enqueue(Item(itemId, EnglishLocale)));
-        Assert.True(_queue.Enqueue(Item(itemId, germanLocale)));
+        Assert.True(_queue.Enqueue(Item(itemId, Samples.German)));
+        Assert.True(_queue.Enqueue(Item(itemId, Samples.French)));
 
-        Assert.Equal(EnglishLocale, (await DequeueAsync()).Locale);
-        Assert.Equal(germanLocale, (await DequeueAsync()).Locale);
+        Assert.Equal(Samples.German, (await DequeueAsync()).Locale);
+        Assert.Equal(Samples.French, (await DequeueAsync()).Locale);
         await AssertQueueIsEmptyAsync();
     }
 
@@ -182,10 +180,10 @@ public sealed class RefreshQueueTests : IDisposable
     {
         var itemId = Guid.NewGuid();
 
-        _queue.Enqueue(Item(itemId, EnglishLocale));
+        _queue.Enqueue(Item(itemId, Samples.German));
         await DequeueAsync();
 
-        Assert.True(_queue.Enqueue(Item(itemId, EnglishLocale)));
+        Assert.True(_queue.Enqueue(Item(itemId, Samples.German)));
         Assert.Equal(itemId, (await DequeueAsync()).ItemId);
     }
 
@@ -201,7 +199,7 @@ public sealed class RefreshQueueTests : IDisposable
         await cancellation.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledDequeue.WaitAsync(_timeout));
 
-        _queue.Enqueue(Item(itemId, EnglishLocale));
+        _queue.Enqueue(Item(itemId, Samples.German));
 
         Assert.Equal(itemId, (await DequeueAsync()).ItemId);
     }
@@ -213,7 +211,7 @@ public sealed class RefreshQueueTests : IDisposable
     {
         var itemIds = NewItemIds(1000);
 
-        Parallel.ForEach(itemIds.Concat(itemIds), itemId => _queue.Enqueue(Item(itemId, EnglishLocale)));
+        Parallel.ForEach(itemIds.Concat(itemIds), itemId => _queue.Enqueue(Item(itemId, Samples.German)));
 
         var dequeued = new List<Guid>();
         foreach (var _ in itemIds)
@@ -240,7 +238,7 @@ public sealed class RefreshQueueTests : IDisposable
             }
         })).ToArray();
 
-        Parallel.ForEach(itemIds, itemId => _queue.Enqueue(Item(itemId, EnglishLocale)));
+        Parallel.ForEach(itemIds, itemId => _queue.Enqueue(Item(itemId, Samples.German)));
         await Task.WhenAll(consumers).WaitAsync(_timeout);
 
         Assert.Equal(itemIds.Order(), dequeued.Order());

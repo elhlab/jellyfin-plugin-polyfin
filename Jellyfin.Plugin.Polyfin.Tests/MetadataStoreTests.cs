@@ -6,8 +6,6 @@ namespace Jellyfin.Plugin.Polyfin.Tests;
 
 public sealed class MetadataStoreTests : IDisposable
 {
-    private static readonly Locale German = new("de", "DE");
-
     private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory();
     private readonly MetadataStore _store;
 
@@ -19,59 +17,55 @@ public sealed class MetadataStoreTests : IDisposable
     [Fact]
     public void Get_ReturnsReplacedMetadata()
     {
-        var itemId = Guid.NewGuid();
-        var metadata = new StoredMetadata(itemId, German, "Der Titel", "Die Beschreibung", "Der Slogan");
+        var metadata = Samples.FullStored;
 
         _store.Replace(metadata);
 
-        Assert.Equal(metadata, _store.Get(itemId, German));
-        Assert.Null(_store.Get(itemId, new Locale("de", null)));
+        Assert.Equal(metadata, _store.Get(metadata.Guid, Samples.German));
+        Assert.Null(_store.Get(metadata.Guid, Samples.German with { Country = null }));
     }
 
     [Fact]
     public void Replace_OverwritesExistingRow()
     {
-        var itemId = Guid.NewGuid();
-        var updated = new StoredMetadata(itemId, German, "Neuer Titel", null, null);
+        var updated = Samples.EmptyStored with { Name = "Neuer Titel" };
 
-        _store.Replace(new StoredMetadata(itemId, German, "Alter Titel", "Alte Beschreibung", "Alter Slogan"));
+        _store.Replace(Samples.FullStored);
         _store.Replace(updated);
 
-        Assert.Equal(updated, _store.Get(itemId, German));
+        Assert.Equal(updated, _store.Get(updated.Guid, Samples.German));
     }
 
     [Fact]
     public void Fill_UpdatesWithoutClearing()
     {
-        var itemId = Guid.NewGuid();
+        _store.Replace(Samples.FullStored);
+        _store.Fill(Samples.EmptyStored with { Name = "Neuer Titel" });
 
-        _store.Replace(new StoredMetadata(itemId, German, "Alter Titel", "Alte Beschreibung", "Alter Slogan"));
-        _store.Fill(new StoredMetadata(itemId, German, "Neuer Titel", null, null));
-
-        Assert.Equal(new StoredMetadata(itemId, German, "Neuer Titel", "Alte Beschreibung", "Alter Slogan"), _store.Get(itemId, German));
+        Assert.Equal(Samples.FullStored with { Name = "Neuer Titel" }, _store.Get(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public void Fill_InsertsMissingRow()
     {
-        var metadata = new StoredMetadata(Guid.NewGuid(), German, "Der Titel", "Die Beschreibung", "Der Slogan");
+        var metadata = Samples.FullStored;
 
         _store.Fill(metadata);
 
-        Assert.Equal(metadata, _store.Get(metadata.Guid, German));
+        Assert.Equal(metadata, _store.Get(metadata.Guid, Samples.German));
     }
 
     [Fact]
     public void Enumerate_ReturnsRequestedLocale()
     {
-        var first = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
-        var second = new StoredMetadata(Guid.NewGuid(), German, null, null, null);
+        var first = Samples.FullStored;
+        var second = Samples.EmptyStored with { Guid = Guid.NewGuid() };
 
         _store.Replace(first);
         _store.Replace(second);
-        _store.Replace(new StoredMetadata(Guid.NewGuid(), new Locale("fr", "FR"), "Titre", null, null));
+        _store.Replace(Samples.FullStored with { Guid = Guid.NewGuid(), Locale = Samples.French });
 
-        Assert.Equivalent(new[] { first, second }, _store.Enumerate(German), strict: true);
+        Assert.Equivalent(new[] { first, second }, _store.Enumerate(Samples.German), strict: true);
     }
 
     public void Dispose()

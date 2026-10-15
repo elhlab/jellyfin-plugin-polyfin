@@ -11,9 +11,6 @@ namespace Jellyfin.Plugin.Polyfin.Tests;
 
 public sealed class MetadataResolverTests : IDisposable
 {
-    private static readonly Locale German = new("de", "DE");
-    private static readonly Locale French = new("fr", "FR");
-
     private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory();
     private readonly MetadataStore _store;
     private readonly FakeFetcher _fetcher = new();
@@ -27,52 +24,48 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     private Task RefreshMovieAsync(Guid itemId, bool refetch = false)
-        => _resolver.RefreshAsync<Movie, MovieInfo>(itemId, German, refetch, CancellationToken.None);
+        => _resolver.RefreshAsync<Movie, MovieInfo>(itemId, Samples.German, refetch, CancellationToken.None);
 
     [Fact]
     public async Task FetchedMetadata_IsStored()
     {
-        var itemId = Guid.NewGuid();
-        _fetcher.Result = new FetchedMetadata("Titel", "Handlung", "Slogan");
+        _fetcher.Result = Samples.FullFetched;
 
-        await RefreshMovieAsync(itemId);
+        await RefreshMovieAsync(Samples.ItemId);
 
-        Assert.Equal(new Metadata(itemId, "Titel", "Handlung", "Slogan"), _resolver.Find(itemId, German));
+        Assert.Equal(Samples.FullMetadata, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public async Task MissingTranslation_StoresEmptyMetadata()
     {
-        var itemId = Guid.NewGuid();
-        _fetcher.Result = new FetchedMetadata(null, null, null);
+        _fetcher.Result = Samples.EmptyFetched;
 
-        await RefreshMovieAsync(itemId);
+        await RefreshMovieAsync(Samples.ItemId);
 
-        Assert.Equal(new Metadata(itemId, null, null, null), _resolver.Find(itemId, German));
+        Assert.Equal(Samples.EmptyMetadata, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public async Task StoredItem_IsNotFetched()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
-        _store.Replace(stored);
+        _store.Replace(Samples.FullStored);
 
-        await RefreshMovieAsync(stored.Guid);
+        await RefreshMovieAsync(Samples.ItemId);
 
         Assert.Equal(0, _fetcher.Calls);
-        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
+        Assert.Equal(Samples.FullMetadata, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public async Task Refetch_ReplacesStoredMetadata()
     {
-        var itemId = Guid.NewGuid();
-        _store.Replace(new StoredMetadata(itemId, German, "Alter Titel", "Alte Handlung", "Alter Slogan"));
-        _fetcher.Result = new FetchedMetadata("Neuer Titel", null, null);
+        _store.Replace(Samples.FullStored);
+        _fetcher.Result = Samples.EmptyFetched with { Name = "Neuer Titel" };
 
-        await RefreshMovieAsync(itemId, refetch: true);
+        await RefreshMovieAsync(Samples.ItemId, refetch: true);
 
-        Assert.Equal(new Metadata(itemId, "Neuer Titel", null, null), _resolver.Find(itemId, German));
+        Assert.Equal(Samples.EmptyMetadata with { Name = "Neuer Titel" }, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
@@ -83,7 +76,7 @@ public sealed class MetadataResolverTests : IDisposable
 
         await RefreshMovieAsync(itemId);
 
-        Assert.Null(_resolver.Find(itemId, German));
+        Assert.Null(_resolver.Find(itemId, Samples.German));
         Assert.Equal(LogLevel.Warning, _logger.LatestRecord.Level);
     }
 
@@ -95,57 +88,53 @@ public sealed class MetadataResolverTests : IDisposable
 
         await RefreshMovieAsync(itemId);
 
-        Assert.Null(_resolver.Find(itemId, German));
+        Assert.Null(_resolver.Find(itemId, Samples.German));
         Assert.Equal(LogLevel.Warning, _logger.LatestRecord.Level);
     }
 
     [Fact]
     public async Task EmptyRefetchWithFailures_KeepsStoredMetadata()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
-        _store.Replace(stored);
+        _store.Replace(Samples.FullStored);
         _fetcher.HadFailures = true;
 
-        await RefreshMovieAsync(stored.Guid, refetch: true);
+        await RefreshMovieAsync(Samples.ItemId, refetch: true);
 
-        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
+        Assert.Equal(Samples.FullMetadata, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public async Task PartialFetchWithFailures_IsStored()
     {
-        var itemId = Guid.NewGuid();
-        _fetcher.Result = new FetchedMetadata("Titel", null, null);
+        _fetcher.Result = Samples.EmptyFetched with { Name = Samples.Name };
         _fetcher.HadFailures = true;
 
-        await RefreshMovieAsync(itemId);
+        await RefreshMovieAsync(Samples.ItemId);
 
-        Assert.Equal(new Metadata(itemId, "Titel", null, null), _resolver.Find(itemId, German));
+        Assert.Equal(Samples.EmptyMetadata with { Name = Samples.Name }, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public async Task PartialRefetchWithFailures_KeepsStoredFields()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
-        _store.Replace(stored);
-        _fetcher.Result = new FetchedMetadata("Neuer Titel", null, null);
+        _store.Replace(Samples.FullStored);
+        _fetcher.Result = Samples.EmptyFetched with { Name = "Neuer Titel" };
         _fetcher.HadFailures = true;
 
-        await RefreshMovieAsync(stored.Guid, refetch: true);
+        await RefreshMovieAsync(Samples.ItemId, refetch: true);
 
-        Assert.Equal(new Metadata(stored.Guid, "Neuer Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
+        Assert.Equal(Samples.FullMetadata with { Name = "Neuer Titel" }, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public async Task MissingItemOnRefetch_KeepsStoredMetadata()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
-        _store.Replace(stored);
+        _store.Replace(Samples.FullStored);
         _fetcher.ItemMissing = true;
 
-        await RefreshMovieAsync(stored.Guid, refetch: true);
+        await RefreshMovieAsync(Samples.ItemId, refetch: true);
 
-        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
+        Assert.Equal(Samples.FullMetadata, _resolver.Find(Samples.ItemId, Samples.German));
     }
 
     [Fact]
@@ -154,23 +143,22 @@ public sealed class MetadataResolverTests : IDisposable
         Guid storedId = Guid.NewGuid();
         Guid missingId = Guid.NewGuid();
 
-        _store.Replace(new StoredMetadata(storedId, German, null, null, null));
+        _store.Replace(Samples.EmptyStored with { Guid = storedId });
 
-        Assert.Equivalent(new[] { missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], German), strict: true);
-        Assert.Equivalent(new[] { storedId, missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], French), strict: true);
+        Assert.Equivalent(new[] { missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], Samples.German), strict: true);
+        Assert.Equivalent(new[] { storedId, missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], Samples.French), strict: true);
     }
 
     [Fact]
     public void Find_ReturnsStoredMetadata()
     {
-        var stored = new StoredMetadata(Guid.NewGuid(), German, "Titel", "Handlung", "Slogan");
-        _store.Replace(stored);
+        _store.Replace(Samples.FullStored);
 
         // Ensure Find does not fetch missing metadata.
-        _fetcher.Result = new FetchedMetadata("Fetched", "Fetched", "Fetched");
+        _fetcher.Result = Samples.EmptyFetched with { Name = "Fetched" };
 
-        Assert.Equal(new Metadata(stored.Guid, "Titel", "Handlung", "Slogan"), _resolver.Find(stored.Guid, German));
-        Assert.Null(_resolver.Find(stored.Guid, French));
+        Assert.Equal(Samples.FullMetadata, _resolver.Find(Samples.ItemId, Samples.German));
+        Assert.Null(_resolver.Find(Samples.ItemId, Samples.French));
     }
 
     public void Dispose()
@@ -183,7 +171,7 @@ public sealed class MetadataResolverTests : IDisposable
     // Returns the configured result, or throws as if the item is missing, instead of calling real providers.
     private sealed class FakeFetcher() : MetadataFetcher(null!, null!, null!)
     {
-        public FetchedMetadata Result { get; set; } = new(null, null, null);
+        public FetchedMetadata Result { get; set; } = Samples.EmptyFetched;
 
         public bool HadFailures { get; set; }
 
