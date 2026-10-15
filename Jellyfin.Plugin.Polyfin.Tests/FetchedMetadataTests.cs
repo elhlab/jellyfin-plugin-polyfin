@@ -13,17 +13,17 @@ public class FetchedMetadataTests
     };
 
     [Fact]
-    public void FillFrom_FillsMissingFields()
+    public void MergedWith_FillsMissingFields()
     {
-        var fetched = Samples.EmptyFetched.FillFrom(ToMovie(Samples.FullFetched));
+        var fetched = Samples.EmptyFetched.MergedWith(ToMovie(Samples.FullFetched));
 
         Assert.Equal(Samples.FullFetched, fetched);
     }
 
     [Fact]
-    public void FillFrom_KeepsEarlierValues()
+    public void MergedWith_KeepsEarlierValues()
     {
-        var fetched = Samples.FullFetched.FillFrom(
+        var fetched = Samples.FullFetched.MergedWith(
             ToMovie(new FetchedMetadata("Another title", "Another overview", "Another tagline"))
         );
 
@@ -31,9 +31,9 @@ public class FetchedMetadataTests
     }
 
     [Fact]
-    public void FillFrom_IgnoresBlankValues()
+    public void MergedWith_IgnoresBlankValues()
     {
-        var fetched = Samples.EmptyFetched.FillFrom(
+        var fetched = Samples.EmptyFetched.MergedWith(
             ToMovie(new FetchedMetadata("  ", string.Empty, "  "))
         );
 
