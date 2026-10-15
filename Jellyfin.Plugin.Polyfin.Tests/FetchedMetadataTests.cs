@@ -40,24 +40,40 @@ public class FetchedMetadataTests
         Assert.Equal(Samples.EmptyFetched, fetched);
     }
 
-    [Theory]
-    [InlineData(Samples.Name, Samples.Overview, Samples.Tagline, true)]
-    [InlineData(Samples.Name, Samples.Overview, null, false)]
-    [InlineData(Samples.Name, null, Samples.Tagline, false)]
-    [InlineData(null, Samples.Overview, null, false)]
-    [InlineData(null, null, Samples.Tagline, false)]
-    public void IsComplete_WhenAllFieldsSet(string? name, string? overview, string? tagline, bool expected)
+    public static TheoryData<bool, bool, bool> AllFieldCombinations()
     {
-        Assert.Equal(expected, new FetchedMetadata(name, overview, tagline).IsComplete);
+        TheoryData<bool, bool, bool> data = new TheoryData<bool, bool, bool>();
+        bool[] values = [true, false];
+        foreach (bool name in values)
+        {
+            foreach (bool overview in values)
+            {
+                foreach (bool tagline in values)
+                {
+                    data.Add(name, overview, tagline);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    private static FetchedMetadata FromFlags(bool name, bool overview, bool tagline) => new FetchedMetadata(
+        name ? Samples.Name : null,
+        overview ? Samples.Overview : null,
+        tagline ? Samples.Tagline : null);
+
+    [Theory]
+    [MemberData(nameof(AllFieldCombinations))]
+    public void IsComplete_WhenAllFieldsSet(bool name, bool overview, bool tagline)
+    {
+        Assert.Equal(name && overview && tagline, FromFlags(name, overview, tagline).IsComplete);
     }
 
     [Theory]
-    [InlineData(null, null, null, true)]
-    [InlineData(Samples.Name, null, null, false)]
-    [InlineData(null, Samples.Overview, null, false)]
-    [InlineData(null, null, Samples.Tagline, false)]
-    public void IsEmpty_WhenNoFieldsSet(string? name, string? overview, string? tagline, bool expected)
+    [MemberData(nameof(AllFieldCombinations))]
+    public void IsEmpty_WhenNoFieldsSet(bool name, bool overview, bool tagline)
     {
-        Assert.Equal(expected, new FetchedMetadata(name, overview, tagline).IsEmpty);
+        Assert.Equal(!name && !overview && !tagline, FromFlags(name, overview, tagline).IsEmpty);
     }
 }
