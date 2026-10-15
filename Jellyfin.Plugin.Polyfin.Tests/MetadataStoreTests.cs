@@ -46,6 +46,17 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
+    public void Fill_UpdatesEveryProvidedField()
+    {
+        var updated = new StoredMetadata(Samples.ItemId, Samples.German, "Neuer Titel", "Neue Beschreibung", "Neuer Slogan");
+
+        _store.Replace(Samples.FullStored);
+        _store.Fill(updated);
+
+        Assert.Equal(updated, _store.Get(Samples.ItemId, Samples.German));
+    }
+
+    [Fact]
     public void Fill_InsertsMissingRow()
     {
         var metadata = Samples.FullStored;
