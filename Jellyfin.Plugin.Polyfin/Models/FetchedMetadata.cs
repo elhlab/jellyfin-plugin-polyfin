@@ -21,11 +21,11 @@ public sealed record FetchedMetadata(string? Name, string? Overview, string? Tag
     public bool IsEmpty => Name is null && Overview is null && Tagline is null;
 
     /// <summary>
-    /// Updates the fields from <paramref name="item"/> while keeping existing fields intact.
+    /// Takes the missing fields from <paramref name="item"/>, keeping the existing fields.
     /// </summary>
     /// <param name="item">The provider result to take values from.</param>
-    /// <returns>The copy.</returns>
-    public FetchedMetadata FillFrom(BaseItem item) => new(
+    /// <returns>A new instance containing the merged metadata.</returns>
+    public FetchedMetadata MergedWith(BaseItem item) => new(
         Name ?? NonEmpty(item.Name),
         Overview ?? NonEmpty(item.Overview),
         Tagline ?? NonEmpty(item.Tagline)
