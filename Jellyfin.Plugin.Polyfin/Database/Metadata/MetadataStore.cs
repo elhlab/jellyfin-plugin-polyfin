@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Jellyfin.Plugin.Polyfin.Models;
 using Microsoft.Data.Sqlite;
 
@@ -11,6 +12,13 @@ namespace Jellyfin.Plugin.Polyfin.Database.Metadata;
 /// </summary>
 public class MetadataStore
 {
+    // Interpolated straight into SQL. Only column names should go in here.
+    private static readonly string[] Columns = ["guid", "locale", "name", "overview", "tagline"];
+
+    private static readonly string ColumnList = string.Join(", ", Columns.Select(column => $"\"{column}\""));
+
+    private static readonly string ParameterList = string.Join(", ", Columns.Select(column => $"${column}"));
+
     private readonly string _connectionString;
 
     /// <summary>
@@ -44,12 +52,16 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            SELECT "guid", "locale", "name", "overview", "tagline"
+            $"""
+            SELECT {ColumnList}
             FROM metadata
             WHERE "guid" = $guid AND "locale" = $locale;
             """;
+#pragma warning restore CA2100
         command.Parameters.AddWithValue("$guid", itemId.ToString());
         command.Parameters.AddWithValue("$locale", locale.ToTag());
 
@@ -68,12 +80,16 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            SELECT "guid", "locale", "name", "overview", "tagline"
+            $"""
+            SELECT {ColumnList}
             FROM metadata
             WHERE "locale" = $locale;
             """;
+#pragma warning restore CA2100
         command.Parameters.AddWithValue("$locale", locale.ToTag());
 
         using var reader = command.ExecuteReader();
@@ -93,11 +109,15 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            INSERT OR REPLACE INTO metadata ("guid", "locale", "name", "overview", "tagline")
-            VALUES ($guid, $locale, $name, $overview, $tagline)
+            $"""
+            INSERT OR REPLACE INTO metadata ({ColumnList})
+            VALUES ({ParameterList})
             """;
+#pragma warning restore CA2100
         WriteParameters(command, metadata);
         command.ExecuteNonQuery();
     }
@@ -113,15 +133,19 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            INSERT INTO metadata ("guid", "locale", "name", "overview", "tagline")
-            VALUES ($guid, $locale, $name, $overview, $tagline)
+            $"""
+            INSERT INTO metadata ({ColumnList})
+            VALUES ({ParameterList})
             ON CONFLICT ("guid", "locale") DO UPDATE SET
                 "name" = COALESCE(excluded."name", "name"),
                 "overview" = COALESCE(excluded."overview", "overview"),
                 "tagline" = COALESCE(excluded."tagline", "tagline")
             """;
+#pragma warning restore CA2100
         WriteParameters(command, metadata);
         command.ExecuteNonQuery();
     }
