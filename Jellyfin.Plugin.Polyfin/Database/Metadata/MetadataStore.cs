@@ -115,8 +115,12 @@ public class MetadataStore
 #pragma warning disable CA2100
         command.CommandText =
             $"""
-            INSERT OR REPLACE INTO metadata ({ColumnList})
+            INSERT INTO metadata ({ColumnList})
             VALUES ({ParameterList})
+            ON CONFLICT ("guid", "locale") DO UPDATE SET
+                "name" = excluded."name",
+                "overview" = excluded."overview",
+                "tagline" = excluded."tagline"
             """;
 #pragma warning restore CA2100
         WriteParameters(command, metadata);

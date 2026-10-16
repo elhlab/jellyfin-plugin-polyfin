@@ -26,9 +26,9 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void Replace_OverwritesExistingRow()
+    public void Replace_OverwritesEveryField()
     {
-        var updated = Samples.EmptyStored with { Name = "Neuer Titel" };
+        var updated = new StoredMetadata(Samples.ItemId, Samples.German, "Neuer Titel", "Neue Beschreibung", null);
 
         _store.Replace(Samples.FullStored);
         _store.Replace(updated);
