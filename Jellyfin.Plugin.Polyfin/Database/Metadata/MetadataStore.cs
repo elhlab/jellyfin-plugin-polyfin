@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using Jellyfin.Plugin.Polyfin.Models;
@@ -150,20 +151,25 @@ public class MetadataStore
         command.ExecuteNonQuery();
     }
 
-    private static StoredMetadata FromReader(SqliteDataReader reader) => new(
-        Guid.Parse(reader.GetString(reader.GetOrdinal("guid"))),
-        Locale.FromTag(reader.GetString(reader.GetOrdinal("locale")))!,
-        reader.IsDBNull(reader.GetOrdinal("name")) ? null : reader.GetString(reader.GetOrdinal("name")),
-        reader.IsDBNull(reader.GetOrdinal("overview")) ? null : reader.GetString(reader.GetOrdinal("overview")),
-        reader.IsDBNull(reader.GetOrdinal("tagline")) ? null : reader.GetString(reader.GetOrdinal("tagline"))
-    );
+    private static StoredMetadata FromReader(SqliteDataReader reader) => new StoredMetadata(
+        Guid.Parse(reader.GetString("guid")),
+        Locale.FromTag(reader.GetString("locale"))!,
+        GetNullableString(reader, "name"),
+        GetNullableString(reader, "overview"),
+        GetNullableString(reader, "tagline"));
 
     private static void WriteParameters(SqliteCommand command, StoredMetadata metadata)
     {
         command.Parameters.AddWithValue("$guid", metadata.Guid.ToString());
         command.Parameters.AddWithValue("$locale", metadata.Locale.ToTag());
-        command.Parameters.AddWithValue("$name", (object?)metadata.Name ?? DBNull.Value);
-        command.Parameters.AddWithValue("$overview", (object?)metadata.Overview ?? DBNull.Value);
-        command.Parameters.AddWithValue("$tagline", (object?)metadata.Tagline ?? DBNull.Value);
+        AddNullableParameter(command, "$name", metadata.Name);
+        AddNullableParameter(command, "$overview", metadata.Overview);
+        AddNullableParameter(command, "$tagline", metadata.Tagline);
     }
+
+    private static string? GetNullableString(SqliteDataReader reader, string column)
+        => reader.IsDBNull(column) ? null : reader.GetString(column);
+
+    private static void AddNullableParameter(SqliteCommand command, string name, object? value)
+        => command.Parameters.AddWithValue(name, value ?? DBNull.Value);
 }
