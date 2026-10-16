@@ -17,7 +17,7 @@ namespace Jellyfin.Plugin.Polyfin.Tests;
 /// The samples describe one item, so converting a sample gives the matching sample of the other type.
 /// They all hold the same <see cref="Name"/>, <see cref="Overview"/> and <see cref="Tagline"/>. The
 /// <see cref="Metadata"/> and <see cref="StoredMetadata"/> samples also share <see cref="ItemId"/>, and the
-/// stored samples also share the <see cref="German"/> locale.
+/// stored samples also share the <see cref="German"/> locale and <see cref="RefreshedAt"/>.
 /// </para>
 /// <para>
 /// Storing two stored samples writes the same row. Give each its own <c>Guid</c> when a test needs
@@ -55,6 +55,11 @@ internal static class Samples
     /// The tagline used in every <c>Full</c> sample.
     /// </summary>
     public const string Tagline = "Der Slogan";
+
+    /// <summary>
+    /// The refresh time of the stored samples.
+    /// </summary>
+    public static readonly DateTimeOffset RefreshedAt = new DateTimeOffset(2022, 6, 30, 12, 0, 0, TimeSpan.Zero);
 
     /// <summary>
     /// Every field set. Use it when the test:
@@ -95,11 +100,11 @@ internal static class Samples
     /// </list>
     /// Same row as <see cref="EmptyStored"/> in the store.
     /// </summary>
-    public static readonly StoredMetadata FullStored = new StoredMetadata(ItemId, German, Name, Overview, Tagline);
+    public static readonly StoredMetadata FullStored = new StoredMetadata(ItemId, German, Name, Overview, Tagline, RefreshedAt);
 
     /// <summary>
     /// No fields set. Use it when the test needs only some fields, and set those using <c>with</c>.
     /// Same row as <see cref="FullStored"/> in the store.
     /// </summary>
-    public static readonly StoredMetadata EmptyStored = new StoredMetadata(ItemId, German, null, null, null);
+    public static readonly StoredMetadata EmptyStored = new StoredMetadata(ItemId, German, null, null, null, RefreshedAt);
 }

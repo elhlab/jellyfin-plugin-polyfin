@@ -14,7 +14,12 @@ namespace Jellyfin.Plugin.Polyfin.Database.Metadata;
 public class MetadataStore
 {
     // Interpolated straight into SQL. Only column names should go in here.
-    private static readonly string[] Columns = ["guid", "locale", "name", "overview", "tagline"];
+    private static readonly string[] Columns =
+    [
+        "guid", "locale",
+        "name", "overview", "tagline",
+        "refreshed_at",
+    ];
 
     private static readonly string ColumnList = string.Join(", ", Columns.Select(column => $"\"{column}\""));
 
@@ -120,7 +125,8 @@ public class MetadataStore
             ON CONFLICT ("guid", "locale") DO UPDATE SET
                 "name" = excluded."name",
                 "overview" = excluded."overview",
-                "tagline" = excluded."tagline"
+                "tagline" = excluded."tagline",
+                "refreshed_at" = excluded."refreshed_at"
             """;
 #pragma warning restore CA2100
         WriteParameters(command, metadata);
@@ -148,7 +154,8 @@ public class MetadataStore
             ON CONFLICT ("guid", "locale") DO UPDATE SET
                 "name" = COALESCE(excluded."name", "name"),
                 "overview" = COALESCE(excluded."overview", "overview"),
-                "tagline" = COALESCE(excluded."tagline", "tagline")
+                "tagline" = COALESCE(excluded."tagline", "tagline"),
+                "refreshed_at" = excluded."refreshed_at"
             """;
 #pragma warning restore CA2100
         WriteParameters(command, metadata);
@@ -160,7 +167,8 @@ public class MetadataStore
         Locale.FromTag(reader.GetString("locale"))!,
         GetNullableString(reader, "name"),
         GetNullableString(reader, "overview"),
-        GetNullableString(reader, "tagline"));
+        GetNullableString(reader, "tagline"),
+        reader.GetFieldValue<DateTimeOffset>("refreshed_at"));
 
     private static void WriteParameters(SqliteCommand command, StoredMetadata metadata)
     {
@@ -169,6 +177,7 @@ public class MetadataStore
         AddNullableParameter(command, "$name", metadata.Name);
         AddNullableParameter(command, "$overview", metadata.Overview);
         AddNullableParameter(command, "$tagline", metadata.Tagline);
+        command.Parameters.AddWithValue("$refreshed_at", metadata.RefreshedAt);
     }
 
     private static string? GetNullableString(SqliteDataReader reader, string column)

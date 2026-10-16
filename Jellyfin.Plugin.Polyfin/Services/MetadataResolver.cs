@@ -72,7 +72,8 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
             return;
         }
 
-        var metadata = Metadata.FromFetched(itemId, fetched.Metadata).ToStored(locale);
+        // FIXME: The time is a placeholder. Decide where the refresh time should come from.
+        var metadata = Metadata.FromFetched(itemId, fetched.Metadata).ToStored(locale, DateTimeOffset.UtcNow);
         if (fetched.HadFailures)
         {
             // A failed provider might have had the missing fields, so keep the ones already stored.

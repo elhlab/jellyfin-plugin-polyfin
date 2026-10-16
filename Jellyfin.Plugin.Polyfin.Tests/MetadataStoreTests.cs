@@ -28,7 +28,7 @@ public sealed class MetadataStoreTests : IDisposable
     [Fact]
     public void Replace_OverwritesEveryField()
     {
-        var updated = new StoredMetadata(Samples.ItemId, Samples.German, "Neuer Titel", "Neue Beschreibung", null);
+        var updated = new StoredMetadata(Samples.ItemId, Samples.German, "Neuer Titel", "Neue Beschreibung", null, Samples.RefreshedAt.AddMinutes(5));
 
         _store.Replace(Samples.FullStored);
         _store.Replace(updated);
@@ -39,16 +39,23 @@ public sealed class MetadataStoreTests : IDisposable
     [Fact]
     public void Fill_UpdatesWithoutClearing()
     {
-        _store.Replace(Samples.FullStored);
-        _store.Fill(Samples.EmptyStored with { Name = "Neuer Titel" });
+        var refreshedAt = Samples.RefreshedAt.AddMinutes(5);
 
-        Assert.Equal(Samples.FullStored with { Name = "Neuer Titel" }, _store.Get(Samples.ItemId, Samples.German));
+        _store.Replace(Samples.FullStored);
+        _store.Fill(Samples.EmptyStored with { Name = "Neuer Titel", RefreshedAt = refreshedAt });
+
+        Assert.Equal(
+            Samples.FullStored with { Name = "Neuer Titel", RefreshedAt = refreshedAt },
+            _store.Get(Samples.ItemId, Samples.German));
     }
 
     [Fact]
     public void Fill_UpdatesEveryProvidedField()
     {
-        var updated = new StoredMetadata(Samples.ItemId, Samples.German, "Neuer Titel", "Neue Beschreibung", "Neuer Slogan");
+        var updated = new StoredMetadata(
+            Samples.ItemId, Samples.German, "Neuer Titel",
+            "Neue Beschreibung", "Neuer Slogan", Samples.RefreshedAt.AddMinutes(5)
+        );
 
         _store.Replace(Samples.FullStored);
         _store.Fill(updated);

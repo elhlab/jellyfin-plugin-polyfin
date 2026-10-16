@@ -9,5 +9,7 @@ CREATE TABLE metadata (
 
     "tagline" TEXT,
 
+    "refreshed_at" TEXT NOT NULL,
+
     PRIMARY KEY ("guid", "locale")
 );
