@@ -14,10 +14,15 @@ namespace Jellyfin.Plugin.Polyfin.Services;
 /// <summary>
 /// Fetches metadata and stores it for later lookup.
 /// </summary>
-public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metadataFetcher, ILogger<MetadataResolver> logger)
+public class MetadataResolver(
+    MetadataStore metadataStore,
+    MetadataFetcher metadataFetcher,
+    TimeProvider timeProvider,
+    ILogger<MetadataResolver> logger)
 {
     private readonly MetadataStore _metadataStore = metadataStore;
     private readonly MetadataFetcher _metadataFetcher = metadataFetcher;
+    private readonly TimeProvider _timeProvider = timeProvider;
     private readonly ILogger<MetadataResolver> _logger = logger;
 
     /// <summary>
@@ -72,8 +77,7 @@ public class MetadataResolver(MetadataStore metadataStore, MetadataFetcher metad
             return;
         }
 
-        // FIXME: The time is a placeholder. Decide where the refresh time should come from.
-        var metadata = Metadata.FromFetched(itemId, fetched.Metadata).ToStored(locale, DateTimeOffset.UtcNow);
+        var metadata = Metadata.FromFetched(itemId, fetched.Metadata).ToStored(locale, _timeProvider.GetUtcNow());
         if (fetched.HadFailures)
         {
             // A failed provider might have had the missing fields, so keep the ones already stored.

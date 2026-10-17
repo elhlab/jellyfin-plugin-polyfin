@@ -6,6 +6,7 @@ using MediaBrowser.Controller.Providers;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Jellyfin.Plugin.Polyfin.Tests;
 
@@ -14,13 +15,14 @@ public sealed class MetadataResolverTests : IDisposable
     private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory();
     private readonly MetadataStore _store;
     private readonly FakeFetcher _fetcher = new();
+    private readonly FakeTimeProvider _timeProvider = new FakeTimeProvider(Samples.RefreshedAt);
     private readonly FakeLogger<MetadataResolver> _logger = new();
     private readonly MetadataResolver _resolver;
 
     public MetadataResolverTests()
     {
         _store = new MetadataStore(_folder.FullName);
-        _resolver = new MetadataResolver(_store, _fetcher, _logger);
+        _resolver = new MetadataResolver(_store, _fetcher, _timeProvider, _logger);
     }
 
     private Task RefreshMovieAsync(Guid itemId, bool refetch = false)
@@ -34,6 +36,18 @@ public sealed class MetadataResolverTests : IDisposable
         await RefreshMovieAsync(Samples.ItemId);
 
         Assert.Equal(Samples.FullMetadata, _resolver.Find(Samples.ItemId, Samples.German));
+    }
+
+    [Fact]
+    public async Task FetchedMetadata_IsStoredWithCurrentTime()
+    {
+        var now = Samples.RefreshedAt.AddDays(1);
+        _timeProvider.SetUtcNow(now);
+        _fetcher.Result = Samples.FullFetched;
+
+        await RefreshMovieAsync(Samples.ItemId);
+
+        Assert.Equal(now, _store.Get(Samples.ItemId, Samples.German)?.RefreshedAt);
     }
 
     [Fact]

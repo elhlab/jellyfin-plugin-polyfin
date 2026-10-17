@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using Jellyfin.Plugin.Polyfin.Configuration;
 using Jellyfin.Plugin.Polyfin.Database.Metadata;
@@ -9,6 +10,7 @@ using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Polyfin;
@@ -19,6 +21,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
+        serviceCollection.TryAddSingleton(TimeProvider.System);
+
         serviceCollection.AddSingleton<MetadataFetcher>();
         serviceCollection.AddSingleton<MetadataResolver>();
         serviceCollection.AddSingleton<MovieTransformer>();
