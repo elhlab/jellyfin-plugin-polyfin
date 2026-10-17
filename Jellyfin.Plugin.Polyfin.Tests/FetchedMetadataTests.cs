@@ -40,40 +40,33 @@ public class FetchedMetadataTests
         Assert.Equal(Samples.EmptyFetched, fetched);
     }
 
-    public static TheoryData<bool, bool, bool> AllFieldCombinations()
+    public static TheoryData<FetchedMetadata, bool> IsFullCases => new TheoryData<FetchedMetadata, bool>
     {
-        TheoryData<bool, bool, bool> data = new TheoryData<bool, bool, bool>();
-        bool[] values = [true, false];
-        foreach (bool name in values)
-        {
-            foreach (bool overview in values)
-            {
-                foreach (bool tagline in values)
-                {
-                    data.Add(name, overview, tagline);
-                }
-            }
-        }
-
-        return data;
-    }
-
-    private static FetchedMetadata FromFlags(bool name, bool overview, bool tagline) => new FetchedMetadata(
-        name ? Samples.Name : null,
-        overview ? Samples.Overview : null,
-        tagline ? Samples.Tagline : null);
+        { Samples.FullFetched, true },
+        { Samples.FullFetched with { Name = null }, false },
+        { Samples.FullFetched with { Overview = null }, false },
+        { Samples.FullFetched with { Tagline = null }, false },
+    };
 
     [Theory]
-    [MemberData(nameof(AllFieldCombinations))]
-    public void IsComplete_WhenAllFieldsSet(bool name, bool overview, bool tagline)
+    [MemberData(nameof(IsFullCases))]
+    public void IsFull_WhenAllFieldsSet(FetchedMetadata fetched, bool expected)
     {
-        Assert.Equal(name && overview && tagline, FromFlags(name, overview, tagline).IsComplete);
+        Assert.Equal(expected, fetched.IsFull);
     }
 
-    [Theory]
-    [MemberData(nameof(AllFieldCombinations))]
-    public void IsEmpty_WhenNoFieldsSet(bool name, bool overview, bool tagline)
+    public static TheoryData<FetchedMetadata, bool> IsEmptyCases => new TheoryData<FetchedMetadata, bool>
     {
-        Assert.Equal(!name && !overview && !tagline, FromFlags(name, overview, tagline).IsEmpty);
+        { Samples.EmptyFetched, true },
+        { Samples.EmptyFetched with { Name = Samples.Name }, false },
+        { Samples.EmptyFetched with { Overview = Samples.Overview }, false },
+        { Samples.EmptyFetched with { Tagline = Samples.Tagline }, false },
+    };
+
+    [Theory]
+    [MemberData(nameof(IsEmptyCases))]
+    public void IsEmpty_WhenNoFieldsSet(FetchedMetadata fetched, bool expected)
+    {
+        Assert.Equal(expected, fetched.IsEmpty);
     }
 }

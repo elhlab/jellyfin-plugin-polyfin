@@ -106,7 +106,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
 
                 merged = merged.MergedWith(result.Item);
 
-                if (merged.IsComplete)
+                if (merged.IsFull)
                 {
                     break;
                 }
