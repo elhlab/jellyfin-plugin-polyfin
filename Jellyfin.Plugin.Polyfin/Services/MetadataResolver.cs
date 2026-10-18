@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,6 +21,16 @@ public class MetadataResolver(
     TimeProvider timeProvider,
     ILogger<MetadataResolver> logger)
 {
+    /// <summary>
+    /// How long complete metadata is kept before it is refreshed.
+    /// </summary>
+    internal static readonly TimeSpan StaleAge = TimeSpan.FromDays(14);
+
+    /// <summary>
+    /// How long incomplete metadata is kept before it is fetched again.
+    /// </summary>
+    internal static readonly TimeSpan RetryAge = TimeSpan.FromDays(3);
+
     private readonly MetadataStore _metadataStore = metadataStore;
     private readonly MetadataFetcher _metadataFetcher = metadataFetcher;
     private readonly TimeProvider _timeProvider = timeProvider;
@@ -32,11 +43,11 @@ public class MetadataResolver(
     /// <typeparam name="TInfo">The lookup info type for <typeparamref name="TItem"/>.</typeparam>
     /// <param name="itemId">The library item's id.</param>
     /// <param name="locale">The locale to fetch metadata for.</param>
-    /// <param name="refetch">Whether to fetch even if metadata is already stored.</param>
+    /// <param name="refetch">Whether to fetch even if the stored metadata doesn't need refreshing.</param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <remarks>
-    /// If no provider has a translation, empty metadata is stored so the item isn't fetched again.
+    /// If no provider returns anything, empty metadata is stored, and <see cref="NeedsRefresh"/> decides when it is retried.
     /// If nothing was found and a provider failed, the store is left unchanged and a warning is logged, so the
     /// item is retried later. If a provider failed, partial results only update the stored metadata, so
     /// fields that are missing keep their values. If the item no longer exists, nothing is stored.
@@ -68,9 +79,7 @@ public class MetadataResolver(
             return;
         }
 
-        // An empty result only means "no translation" if no provider failed. Otherwise don't store
-        // it, so the item remains eligible for a future retry.
-        // TODO: Consider storing these once fetched_at is tracked, to back off retries.
+        // Do not update RefreshedAt so the next scan will try again.
         if (fetched.Metadata.IsEmpty && fetched.HadFailures)
         {
             _logger.LogWarning("Nothing found for {ItemId} in {Locale} and a provider failed, retrying later", itemId, locale.ToTag());
@@ -95,7 +104,7 @@ public class MetadataResolver(
     /// <param name="itemIds">The library item ids to check.</param>
     /// <param name="locale">The locale to check.</param>
     /// <returns>The ids of the items whose metadata needs refreshing.</returns>
-    /// <remarks>An item needs refreshing when nothing is stored for it in the locale.</remarks>
+    /// <remarks>See <see cref="NeedsRefresh"/> for when an item needs refreshing.</remarks>
     public IReadOnlySet<Guid> FilterItemsToRefresh(IReadOnlyCollection<Guid> itemIds, Locale locale)
     {
         var toRefresh = new HashSet<Guid>(itemIds);
@@ -123,6 +132,39 @@ public class MetadataResolver(
             : null;
     }
 
-    // TODO: Refetch partial or stale metadata once completeness and fetched_at are tracked.
-    private static bool NeedsRefresh(StoredMetadata? stored) => stored is null;
+    /// <summary>
+    /// Returns whether stored metadata needs refreshing.
+    /// </summary>
+    /// <param name="stored">The stored metadata, or <see langword="null"/> if none is stored.</param>
+    /// <returns>True if nothing is stored, or the stored metadata is due for a refresh.</returns>
+    /// <remarks>
+    /// Full metadata is never refreshed, complete metadata is refreshed after <see cref="StaleAge"/>,
+    /// and incomplete metadata after <see cref="RetryAge"/>.
+    /// </remarks>
+    public bool NeedsRefresh(StoredMetadata? stored)
+    {
+        if (stored is null)
+        {
+            return true;
+        }
+
+        var completeness = stored.GetCompleteness();
+
+        // TODO: Back off refreshes over time.
+        // TODO: Make the refresh ages configurable in advanced settings.
+        var now = _timeProvider.GetUtcNow();
+        return completeness switch
+        {
+            // Rescanning could catch metadata changes over time, but isn't worth
+            // supporting right now. Users can force an update per item if needed.
+            Completeness.Full => false,
+
+            Completeness.Complete => now - stored.RefreshedAt >= StaleAge,
+
+            Completeness.Incomplete => now - stored.RefreshedAt >= RetryAge,
+
+            _ => throw new UnreachableException(
+                $"Completeness {completeness} has no refresh rule."),
+        };
+    }
 }

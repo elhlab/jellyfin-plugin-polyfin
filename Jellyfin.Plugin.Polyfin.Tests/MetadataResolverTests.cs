@@ -72,6 +72,18 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
+    public async Task StaleItem_IsFetched()
+    {
+        var staleTime = _timeProvider.GetUtcNow() - (MetadataResolver.StaleAge + TimeSpan.FromDays(1));
+        _store.Replace(Samples.FullStored with { Tagline = null, RefreshedAt = staleTime });
+        _fetcher.Result = Samples.FullFetched;
+
+        await RefreshMovieAsync(Samples.ItemId);
+
+        Assert.Equal(1, _fetcher.Calls);
+    }
+
+    [Fact]
     public async Task Refetch_ReplacesStoredMetadata()
     {
         _store.Replace(Samples.FullStored);
@@ -152,15 +164,62 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
-    public void FilterItemsToRefresh_SkipsStoredItems()
+    public void FilterItemsToRefresh_ReturnsItemsThatNeedRefreshing()
     {
-        Guid storedId = Guid.NewGuid();
+        Guid fullId = Guid.NewGuid();
+        Guid freshId = Guid.NewGuid();
+        Guid staleId = Guid.NewGuid();
         Guid missingId = Guid.NewGuid();
+        Guid[] itemIds = [fullId, freshId, staleId, missingId];
 
-        _store.Replace(Samples.EmptyStored with { Guid = storedId });
+        var now = _timeProvider.GetUtcNow();
+        var freshTime = now - (MetadataResolver.StaleAge - TimeSpan.FromDays(1));
+        var staleTime = now - (MetadataResolver.StaleAge + TimeSpan.FromDays(1));
 
-        Assert.Equivalent(new[] { missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], Samples.German), strict: true);
-        Assert.Equivalent(new[] { storedId, missingId }, _resolver.FilterItemsToRefresh([storedId, missingId], Samples.French), strict: true);
+        var complete = Samples.FullStored with { Tagline = null };
+        _store.Replace(Samples.FullStored with { Guid = fullId });
+        _store.Replace(complete with { Guid = freshId, RefreshedAt = freshTime });
+        _store.Replace(complete with { Guid = staleId, RefreshedAt = staleTime });
+
+        Assert.Equivalent(new[] { staleId, missingId }, _resolver.FilterItemsToRefresh(itemIds, Samples.German), strict: true);
+        Assert.Equivalent(itemIds, _resolver.FilterItemsToRefresh(itemIds, Samples.French), strict: true);
+    }
+
+    [Fact]
+    public void NullRow_NeedsRefresh()
+    {
+        Assert.True(_resolver.NeedsRefresh(null));
+    }
+
+    [Fact]
+    public void FullRow_NeverNeedsRefresh()
+    {
+        var now = _timeProvider.GetUtcNow();
+
+        Assert.False(_resolver.NeedsRefresh(Samples.FullStored with { RefreshedAt = now - TimeSpan.FromDays(10000) }));
+    }
+
+    [Fact]
+    public void CompleteRow_NeedsRefreshAfterStaleAge()
+    {
+        var now = _timeProvider.GetUtcNow();
+        var freshTime = now - (MetadataResolver.StaleAge - TimeSpan.FromMinutes(1));
+        var staleTime = now - (MetadataResolver.StaleAge + TimeSpan.FromMinutes(1));
+
+        var complete = Samples.FullStored with { Tagline = null };
+        Assert.False(_resolver.NeedsRefresh(complete with { RefreshedAt = freshTime }));
+        Assert.True(_resolver.NeedsRefresh(complete with { RefreshedAt = staleTime }));
+    }
+
+    [Fact]
+    public void IncompleteRow_NeedsRefreshAfterRetryAge()
+    {
+        var now = _timeProvider.GetUtcNow();
+        var freshTime = now - (MetadataResolver.RetryAge - TimeSpan.FromMinutes(1));
+        var staleTime = now - (MetadataResolver.RetryAge + TimeSpan.FromMinutes(1));
+
+        Assert.False(_resolver.NeedsRefresh(Samples.EmptyStored with { RefreshedAt = freshTime }));
+        Assert.True(_resolver.NeedsRefresh(Samples.EmptyStored with { RefreshedAt = staleTime }));
     }
 
     [Fact]
