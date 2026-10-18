@@ -5,19 +5,20 @@ namespace Jellyfin.Plugin.Polyfin.Tests;
 
 public class CompletenessRulesTests
 {
-    public static TheoryData<StoredMetadata, bool> MovieCases => new TheoryData<StoredMetadata, bool>
+    public static TheoryData<StoredMetadata, Completeness> MovieCases => new TheoryData<StoredMetadata, Completeness>
     {
-        { Samples.FullStored, true },
-        { Samples.FullStored with { Name = null }, false },
-        { Samples.FullStored with { Overview = null }, false },
-        { Samples.FullStored with { Tagline = null }, true },
+        { Samples.FullStored, Completeness.Full },
+        { Samples.FullStored with { Tagline = null }, Completeness.Complete },
+        { Samples.FullStored with { Name = null }, Completeness.Incomplete },
+        { Samples.FullStored with { Overview = null }, Completeness.Incomplete },
+        { Samples.EmptyStored, Completeness.Incomplete },
     };
 
     [Theory]
     [MemberData(nameof(MovieCases))]
-    public void IsMovieComplete_RequiresNameAndOverview(StoredMetadata metadata, bool expected)
+    public void GetMovieCompleteness_RequiresNameAndOverview(StoredMetadata metadata, Completeness expected)
     {
-        Assert.Equal(expected, CompletenessRules.IsMovieComplete(metadata));
-        Assert.Equal(expected, metadata.IsComplete());
+        Assert.Equal(expected, CompletenessRules.GetMovieCompleteness(metadata));
+        Assert.Equal(expected, metadata.GetCompleteness());
     }
 }
