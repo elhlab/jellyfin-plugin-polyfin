@@ -94,7 +94,7 @@ Languages are the metadata languages you offer. If no languages are configured, 
 
 User language matching is a list of locales that map to this language. This mostly works for browser clients, as they are the only ones that send reliable `Accept-Language` headers. For native clients you can also set a user language, to force a user to always use that language.
 
-The library is scanned nightly, or whenever you run the Refresh Metadata task (Dashboard → Scheduled Tasks → Polyfin), and any missing metadata is fetched. Stored metadata is fetched again after a while, sooner if it's missing fields.
+The library is scanned nightly, or whenever you run the Refresh Metadata task (Dashboard → Scheduled Tasks → Polyfin), and any missing metadata is fetched. Stored metadata that's missing fields is fetched again after a while, sooner if it's missing the title or overview. Fully translated metadata isn't refreshed.
 
 If no metadata is found for the user's configured language, the plugin won't modify the response and the library's default is returned. For this reason it is recommended to keep your library in a standard language. English is a good choice for this.
 
