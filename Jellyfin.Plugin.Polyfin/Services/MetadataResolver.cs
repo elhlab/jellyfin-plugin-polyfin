@@ -24,12 +24,12 @@ public class MetadataResolver(
     /// <summary>
     /// How long complete metadata is kept before it is refreshed.
     /// </summary>
-    internal static readonly TimeSpan StaleAge = TimeSpan.FromDays(14);
+    internal static readonly TimeSpan CompleteRefreshAge = TimeSpan.FromDays(14);
 
     /// <summary>
     /// How long incomplete metadata is kept before it is fetched again.
     /// </summary>
-    internal static readonly TimeSpan RetryAge = TimeSpan.FromDays(3);
+    internal static readonly TimeSpan IncompleteRefreshAge = TimeSpan.FromDays(3);
 
     private readonly MetadataStore _metadataStore = metadataStore;
     private readonly MetadataFetcher _metadataFetcher = metadataFetcher;
@@ -138,8 +138,8 @@ public class MetadataResolver(
     /// <param name="stored">The stored metadata, or <see langword="null"/> if none is stored.</param>
     /// <returns>True if nothing is stored, or the stored metadata is due for a refresh.</returns>
     /// <remarks>
-    /// Full metadata is never refreshed, complete metadata is refreshed after <see cref="StaleAge"/>,
-    /// and incomplete metadata after <see cref="RetryAge"/>.
+    /// Full metadata is never refreshed, complete metadata is refreshed after <see cref="CompleteRefreshAge"/>,
+    /// and incomplete metadata after <see cref="IncompleteRefreshAge"/>.
     /// </remarks>
     public bool NeedsRefresh(StoredMetadata? stored)
     {
@@ -159,9 +159,9 @@ public class MetadataResolver(
             // supporting right now. Users can force an update per item if needed.
             Completeness.Full => false,
 
-            Completeness.Complete => now - stored.RefreshedAt >= StaleAge,
+            Completeness.Complete => now - stored.RefreshedAt >= CompleteRefreshAge,
 
-            Completeness.Incomplete => now - stored.RefreshedAt >= RetryAge,
+            Completeness.Incomplete => now - stored.RefreshedAt >= IncompleteRefreshAge,
 
             _ => throw new UnreachableException(
                 $"Completeness {completeness} has no refresh rule."),
