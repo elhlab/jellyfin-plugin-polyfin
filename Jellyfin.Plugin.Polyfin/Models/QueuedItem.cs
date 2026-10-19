@@ -10,7 +10,7 @@ namespace Jellyfin.Plugin.Polyfin.Models;
 /// <param name="ItemType">The library item's type, e.g. Movie.</param>
 /// <param name="Locale">The locale to refresh it in.</param>
 /// <param name="Priority">The item's refresh priority.</param>
-/// <param name="Refetch">Whether to fetch again even if metadata is already stored.</param>
+/// <param name="Refetch">Whether to fetch again even if the stored metadata doesn't need refreshing.</param>
 public sealed record QueuedItem(
     Guid ItemId,
     BaseItemKind ItemType,

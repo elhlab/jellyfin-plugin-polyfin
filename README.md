@@ -94,7 +94,7 @@ Languages are the metadata languages you offer. If no languages are configured, 
 
 User language matching is a list of locales that map to this language. This mostly works for browser clients, as they are the only ones that send reliable `Accept-Language` headers. For native clients you can also set a user language, to force a user to always use that language.
 
-The library is scanned nightly, or whenever you run the Refresh Metadata task (Dashboard → Scheduled Tasks → Polyfin), and any missing metadata is fetched. Already stored metadata isn't refreshed yet.
+The library is scanned nightly, or whenever you run the Refresh Metadata task (Dashboard → Scheduled Tasks → Polyfin), and any missing metadata is fetched. Stored metadata that's missing fields is fetched again after a while, sooner if it's missing the title or overview. Fully translated metadata isn't refreshed.
 
 If no metadata is found for the user's configured language, the plugin won't modify the response and the library's default is returned. For this reason it is recommended to keep your library in a standard language. English is a good choice for this.
 
@@ -105,13 +105,14 @@ If no metadata is found for the user's configured language, the plugin won't mod
 - **The item isn't matched to a provider.** An unidentified movie has nothing to look up.
 - **A locale tag is misspelled.** Happens to the best of us.
 - **The same locale tag is listed under two languages.** It is ignored for both.
+- **The translation was added recently.** Missing fields are fetched again after a few days.
 
 
 ## Roadmap
 
 ### Soon
 
-- [ ] Re-fetch partial metadata after some time (medium)
+- [ ] Back off refreshes over time (medium)
 - [ ] Admin configured library names (medium)
 
 ### Later
@@ -127,7 +128,7 @@ If no metadata is found for the user's configured language, the plugin won't mod
 - [ ] Clean up metadata via a scan and an event handler (medium)
 - [ ] Skip refetching when an item update didn't change its match (medium)
 - [ ] Settings page hint: new languages are fetched on the next scheduled refresh (small)
-- [ ] Advanced settings: worker count and wait interval (medium)
+- [ ] Advanced settings: worker count, wait interval and refresh timing (medium)
 - [ ] Smoke-test script against the dev Jellyfin (large)
 - [ ] Better test coverage (large)
 

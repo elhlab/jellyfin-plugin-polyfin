@@ -13,7 +13,7 @@ public sealed record FetchedMetadata(string? Name, string? Overview, string? Tag
     /// <summary>
     /// Gets a value indicating whether every field is filled.
     /// </summary>
-    public bool IsComplete => Name is not null && Overview is not null && Tagline is not null;
+    public bool IsFull => Name is not null && Overview is not null && Tagline is not null;
 
     /// <summary>
     /// Gets a value indicating whether no field is filled.

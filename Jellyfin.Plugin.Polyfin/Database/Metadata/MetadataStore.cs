@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
+using System.Linq;
 using Jellyfin.Plugin.Polyfin.Models;
 using Microsoft.Data.Sqlite;
 
@@ -11,6 +13,18 @@ namespace Jellyfin.Plugin.Polyfin.Database.Metadata;
 /// </summary>
 public class MetadataStore
 {
+    // Interpolated straight into SQL. Only column names should go in here.
+    private static readonly string[] Columns =
+    [
+        "guid", "locale",
+        "name", "overview", "tagline",
+        "refreshed_at",
+    ];
+
+    private static readonly string ColumnList = string.Join(", ", Columns.Select(column => $"\"{column}\""));
+
+    private static readonly string ParameterList = string.Join(", ", Columns.Select(column => $"${column}"));
+
     private readonly string _connectionString;
 
     /// <summary>
@@ -44,12 +58,16 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            SELECT "guid", "locale", "name", "overview", "tagline"
+            $"""
+            SELECT {ColumnList}
             FROM metadata
             WHERE "guid" = $guid AND "locale" = $locale;
             """;
+#pragma warning restore CA2100
         command.Parameters.AddWithValue("$guid", itemId.ToString());
         command.Parameters.AddWithValue("$locale", locale.ToTag());
 
@@ -68,12 +86,16 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            SELECT "guid", "locale", "name", "overview", "tagline"
+            $"""
+            SELECT {ColumnList}
             FROM metadata
             WHERE "locale" = $locale;
             """;
+#pragma warning restore CA2100
         command.Parameters.AddWithValue("$locale", locale.ToTag());
 
         using var reader = command.ExecuteReader();
@@ -93,11 +115,20 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            INSERT OR REPLACE INTO metadata ("guid", "locale", "name", "overview", "tagline")
-            VALUES ($guid, $locale, $name, $overview, $tagline)
+            $"""
+            INSERT INTO metadata ({ColumnList})
+            VALUES ({ParameterList})
+            ON CONFLICT ("guid", "locale") DO UPDATE SET
+                "name" = excluded."name",
+                "overview" = excluded."overview",
+                "tagline" = excluded."tagline",
+                "refreshed_at" = excluded."refreshed_at"
             """;
+#pragma warning restore CA2100
         WriteParameters(command, metadata);
         command.ExecuteNonQuery();
     }
@@ -113,33 +144,45 @@ public class MetadataStore
         connection.Open();
 
         using var command = connection.CreateCommand();
+
+        // Interpolated lists are derived from Columns, never user input.
+#pragma warning disable CA2100
         command.CommandText =
-            """
-            INSERT INTO metadata ("guid", "locale", "name", "overview", "tagline")
-            VALUES ($guid, $locale, $name, $overview, $tagline)
+            $"""
+            INSERT INTO metadata ({ColumnList})
+            VALUES ({ParameterList})
             ON CONFLICT ("guid", "locale") DO UPDATE SET
                 "name" = COALESCE(excluded."name", "name"),
                 "overview" = COALESCE(excluded."overview", "overview"),
-                "tagline" = COALESCE(excluded."tagline", "tagline")
+                "tagline" = COALESCE(excluded."tagline", "tagline"),
+                "refreshed_at" = excluded."refreshed_at"
             """;
+#pragma warning restore CA2100
         WriteParameters(command, metadata);
         command.ExecuteNonQuery();
     }
 
-    private static StoredMetadata FromReader(SqliteDataReader reader) => new(
-        Guid.Parse(reader.GetString(reader.GetOrdinal("guid"))),
-        Locale.FromTag(reader.GetString(reader.GetOrdinal("locale")))!,
-        reader.IsDBNull(reader.GetOrdinal("name")) ? null : reader.GetString(reader.GetOrdinal("name")),
-        reader.IsDBNull(reader.GetOrdinal("overview")) ? null : reader.GetString(reader.GetOrdinal("overview")),
-        reader.IsDBNull(reader.GetOrdinal("tagline")) ? null : reader.GetString(reader.GetOrdinal("tagline"))
-    );
+    private static StoredMetadata FromReader(SqliteDataReader reader) => new StoredMetadata(
+        Guid.Parse(reader.GetString("guid")),
+        Locale.FromTag(reader.GetString("locale"))!,
+        GetNullableString(reader, "name"),
+        GetNullableString(reader, "overview"),
+        GetNullableString(reader, "tagline"),
+        reader.GetFieldValue<DateTimeOffset>("refreshed_at"));
 
     private static void WriteParameters(SqliteCommand command, StoredMetadata metadata)
     {
         command.Parameters.AddWithValue("$guid", metadata.Guid.ToString());
         command.Parameters.AddWithValue("$locale", metadata.Locale.ToTag());
-        command.Parameters.AddWithValue("$name", (object?)metadata.Name ?? DBNull.Value);
-        command.Parameters.AddWithValue("$overview", (object?)metadata.Overview ?? DBNull.Value);
-        command.Parameters.AddWithValue("$tagline", (object?)metadata.Tagline ?? DBNull.Value);
+        AddNullableParameter(command, "$name", metadata.Name);
+        AddNullableParameter(command, "$overview", metadata.Overview);
+        AddNullableParameter(command, "$tagline", metadata.Tagline);
+        command.Parameters.AddWithValue("$refreshed_at", metadata.RefreshedAt);
     }
+
+    private static string? GetNullableString(SqliteDataReader reader, string column)
+        => reader.IsDBNull(column) ? null : reader.GetString(column);
+
+    private static void AddNullableParameter(SqliteCommand command, string name, object? value)
+        => command.Parameters.AddWithValue(name, value ?? DBNull.Value);
 }

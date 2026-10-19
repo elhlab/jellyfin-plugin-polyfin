@@ -64,7 +64,7 @@ public class BackgroundMetadataRefresher(
     /// <param name="itemType">The library item's type, e.g. Movie.</param>
     /// <param name="locale">The locale to refresh it in.</param>
     /// <param name="priority">How soon to refresh it.</param>
-    /// <param name="refetch">Whether to fetch again even if metadata is already stored.</param>
+    /// <param name="refetch">Whether to fetch again even if the stored metadata doesn't need refreshing.</param>
     /// <exception cref="ArgumentException">The item type is not in <see cref="SupportedItemTypes"/>.</exception>
     public void Enqueue(Guid itemId, BaseItemKind itemType, Locale locale, QueuePriority priority, bool refetch)
     {

@@ -19,7 +19,7 @@ public sealed class MovieTransformerTests : IDisposable
         _store = new MetadataStore(_folder.FullName);
 
         // Find only reads the store, so the fetcher is never accessed.
-        var resolver = new MetadataResolver(_store, null!, NullLogger<MetadataResolver>.Instance);
+        var resolver = new MetadataResolver(_store, null!, TimeProvider.System, NullLogger<MetadataResolver>.Instance);
         _transformer = new MovieTransformer(resolver);
     }
 
