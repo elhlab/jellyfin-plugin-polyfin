@@ -61,7 +61,7 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task StoredItem_IsNotFetched()
+    public async Task FullItem_IsNotFetched()
     {
         _store.Replace(Samples.FullStored);
 
@@ -72,14 +72,15 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task DueItem_IsFetched()
+    public async Task CompleteItem_IsFetchedOnceDue()
     {
-        var oldTime = _timeProvider.GetUtcNow() - (MetadataResolver.CompleteRefreshAge + TimeSpan.FromDays(1));
-        _store.Replace(Samples.FullStored with { Tagline = null, RefreshedAt = oldTime });
-        _fetcher.Result = Samples.FullFetched;
+        _store.Replace(Samples.FullStored with { Tagline = null });
 
         await RefreshMovieAsync(Samples.ItemId);
+        Assert.Equal(0, _fetcher.Calls);
 
+        _timeProvider.Advance(MetadataResolver.CompleteRefreshAge);
+        await RefreshMovieAsync(Samples.ItemId);
         Assert.Equal(1, _fetcher.Calls);
     }
 
@@ -122,11 +123,13 @@ public sealed class MetadataResolverTests : IDisposable
     public async Task EmptyRefetchWithFailures_KeepsStoredMetadata()
     {
         _store.Replace(Samples.FullStored);
+        _timeProvider.SetUtcNow(Samples.RefreshedAt.AddDays(1));
         _fetcher.HadFailures = true;
 
         await RefreshMovieAsync(Samples.ItemId, refetch: true);
 
         Assert.Equal(Samples.FullMetadata, _resolver.Find(Samples.ItemId, Samples.German));
+        Assert.Equal(Samples.RefreshedAt, _store.Get(Samples.ItemId, Samples.German)?.RefreshedAt);
     }
 
     [Fact]
@@ -172,14 +175,14 @@ public sealed class MetadataResolverTests : IDisposable
         var full = Samples.FullStored with { Guid = Guid.NewGuid() };
         var recent = complete with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge - TimeSpan.FromDays(1)) };
         var old = complete with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge + TimeSpan.FromDays(1)) };
-        Guid missingId = Guid.NewGuid();
-        Guid[] itemIds = [full.Guid, recent.Guid, old.Guid, missingId];
+        Guid newId = Guid.NewGuid();
+        Guid[] itemIds = [full.Guid, recent.Guid, old.Guid, newId];
 
         _store.Replace(full);
         _store.Replace(recent);
         _store.Replace(old);
 
-        Assert.Equivalent(new[] { old.Guid, missingId }, _resolver.FilterItemsToRefresh(itemIds, Samples.German), strict: true);
+        Assert.Equivalent(new[] { old.Guid, newId }, _resolver.FilterItemsToRefresh(itemIds, Samples.German), strict: true);
         Assert.Equivalent(itemIds, _resolver.FilterItemsToRefresh(itemIds, Samples.French), strict: true);
     }
 
