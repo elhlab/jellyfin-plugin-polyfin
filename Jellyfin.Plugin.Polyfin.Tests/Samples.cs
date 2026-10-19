@@ -98,13 +98,19 @@ internal static class Samples
     /// <item>doesn't care which fields are set, or</item>
     /// <item>needs all but some (set those to <see langword="null"/>).</item>
     /// </list>
-    /// Same row as <see cref="EmptyStored"/> in the store.
+    /// Same row as <see cref="CompleteStored"/> and <see cref="EmptyStored"/> in the store.
     /// </summary>
     public static readonly StoredMetadata FullStored = new StoredMetadata(ItemId, German, Name, Overview, Tagline, RefreshedAt);
 
     /// <summary>
+    /// Every field but the tagline set, so it counts as complete but not full.
+    /// Same row as <see cref="FullStored"/> and <see cref="EmptyStored"/> in the store.
+    /// </summary>
+    public static readonly StoredMetadata CompleteStored = new StoredMetadata(ItemId, German, Name, Overview, null, RefreshedAt);
+
+    /// <summary>
     /// No fields set. Use it when the test needs only some fields, and set those using <c>with</c>.
-    /// Same row as <see cref="FullStored"/> in the store.
+    /// Same row as <see cref="FullStored"/> and <see cref="CompleteStored"/> in the store.
     /// </summary>
     public static readonly StoredMetadata EmptyStored = new StoredMetadata(ItemId, German, null, null, null, RefreshedAt);
 }

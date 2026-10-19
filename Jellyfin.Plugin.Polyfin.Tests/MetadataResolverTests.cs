@@ -74,7 +74,7 @@ public sealed class MetadataResolverTests : IDisposable
     [Fact]
     public async Task CompleteItem_IsFetchedOnceDue()
     {
-        _store.Replace(Samples.FullStored with { Tagline = null });
+        _store.Replace(Samples.CompleteStored);
 
         await RefreshMovieAsync(Samples.ItemId);
         Assert.Equal(0, _fetcher.Calls);
@@ -170,11 +170,9 @@ public sealed class MetadataResolverTests : IDisposable
     public void FilterItemsToRefresh_ReturnsItemsThatNeedRefreshing()
     {
         var now = _timeProvider.GetUtcNow();
-        var complete = Samples.FullStored with { Tagline = null };
-
         var full = Samples.FullStored with { Guid = Guid.NewGuid() };
-        var recent = complete with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge - TimeSpan.FromDays(1)) };
-        var old = complete with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge + TimeSpan.FromDays(1)) };
+        var recent = Samples.CompleteStored with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge - TimeSpan.FromDays(1)) };
+        var old = Samples.CompleteStored with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge + TimeSpan.FromDays(1)) };
         Guid newId = Guid.NewGuid();
         Guid[] itemIds = [full.Guid, recent.Guid, old.Guid, newId];
 
@@ -207,9 +205,8 @@ public sealed class MetadataResolverTests : IDisposable
         var recentTime = now - (MetadataResolver.CompleteRefreshAge - TimeSpan.FromMinutes(1));
         var oldTime = now - (MetadataResolver.CompleteRefreshAge + TimeSpan.FromMinutes(1));
 
-        var complete = Samples.FullStored with { Tagline = null };
-        Assert.False(_resolver.NeedsRefresh(complete with { RefreshedAt = recentTime }));
-        Assert.True(_resolver.NeedsRefresh(complete with { RefreshedAt = oldTime }));
+        Assert.False(_resolver.NeedsRefresh(Samples.CompleteStored with { RefreshedAt = recentTime }));
+        Assert.True(_resolver.NeedsRefresh(Samples.CompleteStored with { RefreshedAt = oldTime }));
     }
 
     [Fact]
