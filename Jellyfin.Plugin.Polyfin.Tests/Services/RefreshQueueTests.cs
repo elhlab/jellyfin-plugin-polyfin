@@ -3,7 +3,7 @@ using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.Polyfin.Models;
 using Jellyfin.Plugin.Polyfin.Services;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Services;
 
 public sealed class RefreshQueueTests : IDisposable
 {

@@ -2,7 +2,7 @@ using Jellyfin.Plugin.Polyfin.Database.Metadata;
 using Jellyfin.Plugin.Polyfin.Models;
 using Microsoft.Data.Sqlite;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Database.Metadata;
 
 public sealed class MetadataStoreTests : IDisposable
 {

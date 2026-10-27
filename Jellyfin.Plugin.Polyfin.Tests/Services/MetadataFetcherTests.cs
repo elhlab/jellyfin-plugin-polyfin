@@ -1,6 +1,6 @@
 using Jellyfin.Plugin.Polyfin.Services;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Services;
 
 public class MetadataFetcherTests
 {

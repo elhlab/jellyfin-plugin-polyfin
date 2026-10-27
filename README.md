@@ -163,7 +163,7 @@ CI builds, tests and runs CodeQL on every push to main and every pull request.
 
 - `docs/`: docs and images.
 - `scripts/`: dev scripts.
-- `Jellyfin.Plugin.Polyfin.Tests/`: tests. Currently all in a flat directory, might change in the future. Fixtures go in `Fixtures/`.
+- `Jellyfin.Plugin.Polyfin.Tests/`: tests, laid out in the same folders as the plugin code. Fixtures go in `Fixtures/`.
 - `Jellyfin.Plugin.Polyfin/`: plugin code.
   - `Configuration/`: settings model and the settings page.
   - `Database/`: SQLite metadata store and migration runner.

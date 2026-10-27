@@ -2,7 +2,7 @@ using Jellyfin.Plugin.Polyfin.Database;
 using Jellyfin.Plugin.Polyfin.Tests.Fixtures;
 using Jellyfin.Plugin.Polyfin.Tests.Fixtures.BadName;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Database;
 
 public class EmbeddedMigrationsTests
 {
@@ -33,7 +33,7 @@ public class EmbeddedMigrationsTests
         // This test class has no Migrations folder next to it.
         var exception = Assert.Throws<InvalidOperationException>(() => EmbeddedMigrations.For<EmbeddedMigrationsTests>());
 
-        Assert.Contains("Jellyfin.Plugin.Polyfin.Tests.Migrations.", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Jellyfin.Plugin.Polyfin.Tests.Database.Migrations.", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
