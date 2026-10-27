@@ -1,7 +1,7 @@
 using Jellyfin.Plugin.Polyfin.Models;
 using MediaBrowser.Controller.Entities.Movies;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Models;
 
 public class FetchedMetadataTests
 {

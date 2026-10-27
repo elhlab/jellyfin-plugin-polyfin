@@ -6,7 +6,7 @@ using MediaBrowser.Model.Dto;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Transformers;
 
 public sealed class MovieTransformerTests : IDisposable
 {

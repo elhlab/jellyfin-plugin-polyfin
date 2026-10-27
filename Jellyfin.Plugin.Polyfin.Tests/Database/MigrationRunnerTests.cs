@@ -1,7 +1,7 @@
 using Jellyfin.Plugin.Polyfin.Database;
 using Microsoft.Data.Sqlite;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Database;
 
 public class MigrationRunnerTests
 {

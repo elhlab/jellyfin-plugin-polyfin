@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Services;
 
 public sealed class MetadataResolverTests : IDisposable
 {

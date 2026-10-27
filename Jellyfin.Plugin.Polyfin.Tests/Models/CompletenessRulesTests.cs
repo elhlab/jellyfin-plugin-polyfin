@@ -1,7 +1,7 @@
 using Jellyfin.Plugin.Polyfin.Database.Metadata;
 using Jellyfin.Plugin.Polyfin.Models;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Models;
 
 public class CompletenessRulesTests
 {

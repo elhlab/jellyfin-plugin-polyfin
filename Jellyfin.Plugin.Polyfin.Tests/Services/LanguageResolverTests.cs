@@ -4,7 +4,7 @@ using Jellyfin.Plugin.Polyfin.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 
-namespace Jellyfin.Plugin.Polyfin.Tests;
+namespace Jellyfin.Plugin.Polyfin.Tests.Services;
 
 public class LanguageResolverTests
 {
