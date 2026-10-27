@@ -26,14 +26,31 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void Replace_OverwritesEveryField()
+    public void Replace_OverwritesAllButCreatedAt()
     {
-        var updated = new StoredMetadata(Samples.ItemId, Samples.German, "Neuer Titel", "Neue Beschreibung", null, Samples.RefreshedAt.AddMinutes(5));
+        var updated = new StoredMetadata(
+            Samples.ItemId,
+            Samples.German,
+            "Neuer Titel",
+            "Neue Beschreibung",
+            null,
+            Samples.RefreshedAt.AddMinutes(5),
+            Samples.RefreshedAt.AddMinutes(5)
+        );
 
         _store.Replace(Samples.FullStored);
         _store.Replace(updated);
 
-        Assert.Equal(updated, _store.Get(updated.Guid, Samples.German));
+        Assert.Equal(updated with { CreatedAt = Samples.CreatedAt }, _store.Get(updated.Guid, Samples.German));
+    }
+
+    [Fact]
+    public void Replace_KeepsCreatedAt()
+    {
+        _store.Replace(Samples.FullStored);
+        _store.Replace(Samples.FullStored with { CreatedAt = Samples.CreatedAt.AddDays(5) });
+
+        Assert.Equal(Samples.FullStored.CreatedAt, _store.Get(Samples.ItemId, Samples.German)?.CreatedAt);
     }
 
     [Fact]
@@ -50,17 +67,31 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void Fill_UpdatesEveryProvidedField()
+    public void Fill_KeepsCreatedAt()
+    {
+        _store.Replace(Samples.FullStored);
+        _store.Fill(Samples.FullStored with { CreatedAt = Samples.CreatedAt.AddDays(5) });
+
+        Assert.Equal(Samples.FullStored.CreatedAt, _store.Get(Samples.ItemId, Samples.German)?.CreatedAt);
+    }
+
+    [Fact]
+    public void Fill_UpdatesAllButCreatedAt()
     {
         var updated = new StoredMetadata(
-            Samples.ItemId, Samples.German, "Neuer Titel",
-            "Neue Beschreibung", "Neuer Slogan", Samples.RefreshedAt.AddMinutes(5)
+            Samples.ItemId,
+            Samples.German,
+            "Neuer Titel",
+            "Neue Beschreibung",
+            "Neuer Slogan",
+            Samples.RefreshedAt.AddMinutes(5),
+            Samples.RefreshedAt.AddMinutes(5)
         );
 
         _store.Replace(Samples.FullStored);
         _store.Fill(updated);
 
-        Assert.Equal(updated, _store.Get(Samples.ItemId, Samples.German));
+        Assert.Equal(updated with { CreatedAt = Samples.CreatedAt }, _store.Get(Samples.ItemId, Samples.German));
     }
 
     [Fact]
