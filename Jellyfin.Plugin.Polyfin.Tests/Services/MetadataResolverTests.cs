@@ -48,6 +48,7 @@ public sealed class MetadataResolverTests : IDisposable
         await RefreshMovieAsync(Samples.ItemId);
 
         Assert.Equal(now, _store.Get(Samples.ItemId, Samples.German)?.RefreshedAt);
+        Assert.Equal(now, _store.Get(Samples.ItemId, Samples.German)?.CreatedAt);
     }
 
     [Fact]

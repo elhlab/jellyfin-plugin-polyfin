@@ -34,5 +34,5 @@ public sealed record Metadata(Guid ItemId, string? Name, string? Overview, strin
     /// <param name="refreshedAt">When the metadata was refreshed.</param>
     /// <returns>The stored metadata.</returns>
     public StoredMetadata ToStored(Locale locale, DateTimeOffset refreshedAt) =>
-        new StoredMetadata(ItemId, locale, Name, Overview, Tagline, refreshedAt);
+        new StoredMetadata(ItemId, locale, Name, Overview, Tagline, refreshedAt, refreshedAt);
 }
