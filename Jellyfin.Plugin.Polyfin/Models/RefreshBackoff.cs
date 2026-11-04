@@ -44,6 +44,9 @@ public static class RefreshBackoff
     public static DateTimeOffset? GetRefreshTime(StoredMetadata metadata, DateTimeOffset now)
     {
         var completeness = metadata.GetCompleteness();
+
+        // Rescanning could catch metadata changes over time, but isn't worth
+        // supporting right now. Users can force an update per item if needed.
         if (completeness == Completeness.Full)
         {
             return null;
