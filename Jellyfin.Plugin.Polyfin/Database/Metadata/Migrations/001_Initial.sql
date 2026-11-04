@@ -10,7 +10,7 @@ CREATE TABLE metadata (
     "tagline" TEXT,
 
     "refreshed_at" TEXT NOT NULL,
-    "created_at" TEXT NOT NULL,
+    "added_at" TEXT NOT NULL,
 
     PRIMARY KEY ("guid", "locale")
 );

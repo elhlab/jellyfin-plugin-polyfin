@@ -52,7 +52,7 @@ public static class RefreshBackoff
             return null;
         }
 
-        var wait = GetWait(now - metadata.CreatedAt);
+        var wait = GetWait(now - metadata.AddedAt);
         if (completeness == Completeness.Complete)
         {
             wait *= CompleteWaitMultiplier;

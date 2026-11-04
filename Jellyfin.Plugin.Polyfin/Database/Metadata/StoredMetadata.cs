@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.Polyfin.Database.Metadata;
 /// <param name="Overview">The overview, or <see langword="null"/> if not resolved.</param>
 /// <param name="Tagline">The tagline, or <see langword="null"/> if not resolved.</param>
 /// <param name="RefreshedAt">When the row was last refreshed.</param>
-/// <param name="CreatedAt">When the row was created.</param>
+/// <param name="AddedAt">When the item was added to the library.</param>
 public sealed record StoredMetadata(
     Guid Guid,
     Locale Locale,
@@ -20,5 +20,5 @@ public sealed record StoredMetadata(
     string? Overview,
     string? Tagline,
     DateTimeOffset RefreshedAt,
-    DateTimeOffset CreatedAt
+    DateTimeOffset AddedAt
 );

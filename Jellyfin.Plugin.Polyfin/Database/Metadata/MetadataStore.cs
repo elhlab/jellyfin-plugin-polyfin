@@ -18,7 +18,7 @@ public class MetadataStore
     [
         "guid", "locale",
         "name", "overview", "tagline",
-        "refreshed_at", "created_at",
+        "refreshed_at", "added_at",
     ];
 
     private static readonly string ColumnList = string.Join(", ", Columns.Select(column => $"\"{column}\""));
@@ -107,11 +107,11 @@ public class MetadataStore
 
     /// <summary>
     /// Stores metadata for an item and locale,
-    /// overwriting any field on an existing row except the <c>created_at</c> field.
+    /// overwriting any field on an existing row except the <c>added_at</c> field.
     /// </summary>
     /// <param name="metadata">The metadata to store.</param>
     /// <remarks>
-    /// <c>CreatedAt</c> is not updated. It is set once during creation.
+    /// <c>AddedAt</c> is not updated. It is set once when the row is added.
     /// </remarks>
     public void Replace(StoredMetadata metadata)
     {
@@ -143,7 +143,7 @@ public class MetadataStore
     /// </summary>
     /// <param name="metadata">The metadata to store.</param>
     /// <remarks>
-    /// <c>CreatedAt</c> is not updated. It is set once during creation.
+    /// <c>AddedAt</c> is not updated. It is set once when the row is added.
     /// </remarks>
     public void Fill(StoredMetadata metadata)
     {
@@ -176,7 +176,7 @@ public class MetadataStore
         GetNullableString(reader, "overview"),
         GetNullableString(reader, "tagline"),
         reader.GetFieldValue<DateTimeOffset>("refreshed_at"),
-        reader.GetFieldValue<DateTimeOffset>("created_at"));
+        reader.GetFieldValue<DateTimeOffset>("added_at"));
 
     private static void WriteParameters(SqliteCommand command, StoredMetadata metadata)
     {
@@ -186,7 +186,7 @@ public class MetadataStore
         AddNullableParameter(command, "$overview", metadata.Overview);
         AddNullableParameter(command, "$tagline", metadata.Tagline);
         command.Parameters.AddWithValue("$refreshed_at", metadata.RefreshedAt);
-        command.Parameters.AddWithValue("$created_at", metadata.CreatedAt);
+        command.Parameters.AddWithValue("$added_at", metadata.AddedAt);
     }
 
     private static string? GetNullableString(SqliteDataReader reader, string column)

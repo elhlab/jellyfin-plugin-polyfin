@@ -30,19 +30,20 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// </param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>
-    /// The merged metadata, empty if no provider returned metadata in the requested language,
+    /// The item, the merged metadata, empty if no provider returned metadata in the requested language,
     /// and whether any provider failed or timed out.
     /// </returns>
     /// <exception cref="FetchItemNotFoundException">
     /// The id does not refer to a <typeparamref name="TItem"/>.
     /// </exception>
-    public virtual async Task<(FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
+    public virtual async Task<(TItem Item, FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(Guid itemId, Locale? locale, CancellationToken cancellationToken)
         where TItem : BaseItem, IHasLookupInfo<TInfo>
         where TInfo : ItemLookupInfo, new()
     {
         if (_libraryManager.GetItemById(itemId) is TItem item)
         {
-            return await FetchMetadataAsync<TItem, TInfo>(item, locale, cancellationToken).ConfigureAwait(false);
+            var (metadata, hadFailures) = await FetchMetadataAsync<TItem, TInfo>(item, locale, cancellationToken).ConfigureAwait(false);
+            return (item, metadata, hadFailures);
         }
 
         throw new FetchItemNotFoundException($"Item {itemId} not found or not a {typeof(TItem).Name}");

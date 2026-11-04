@@ -62,10 +62,10 @@ internal static class Samples
     public static readonly DateTimeOffset RefreshedAt = new DateTimeOffset(2022, 6, 30, 12, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// The creation time of the stored samples.
+    /// When the stored samples were added to the library.
     /// The time is one day before <see cref="RefreshedAt"/> to ensure tests fail if these dates get mixed up.
     /// </summary>
-    public static readonly DateTimeOffset CreatedAt = RefreshedAt.AddDays(-1);
+    public static readonly DateTimeOffset AddedAt = RefreshedAt.AddDays(-1);
 
     /// <summary>
     /// Every field set. Use it when the test:
@@ -106,17 +106,17 @@ internal static class Samples
     /// </list>
     /// Same row as <see cref="CompleteStored"/> and <see cref="EmptyStored"/> in the store.
     /// </summary>
-    public static readonly StoredMetadata FullStored = new StoredMetadata(ItemId, German, Name, Overview, Tagline, RefreshedAt, CreatedAt);
+    public static readonly StoredMetadata FullStored = new StoredMetadata(ItemId, German, Name, Overview, Tagline, RefreshedAt, AddedAt);
 
     /// <summary>
     /// Every field but the tagline set, so it counts as complete but not full.
     /// Same row as <see cref="FullStored"/> and <see cref="EmptyStored"/> in the store.
     /// </summary>
-    public static readonly StoredMetadata CompleteStored = new StoredMetadata(ItemId, German, Name, Overview, null, RefreshedAt, CreatedAt);
+    public static readonly StoredMetadata CompleteStored = new StoredMetadata(ItemId, German, Name, Overview, null, RefreshedAt, AddedAt);
 
     /// <summary>
     /// No fields set. Use it when the test needs only some fields, and set those using <c>with</c>.
     /// Same row as <see cref="FullStored"/> and <see cref="CompleteStored"/> in the store.
     /// </summary>
-    public static readonly StoredMetadata EmptyStored = new StoredMetadata(ItemId, German, null, null, null, RefreshedAt, CreatedAt);
+    public static readonly StoredMetadata EmptyStored = new StoredMetadata(ItemId, German, null, null, null, RefreshedAt, AddedAt);
 }

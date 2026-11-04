@@ -56,7 +56,7 @@ public class MetadataResolver(
             return;
         }
 
-        (FetchedMetadata Metadata, bool HadFailures) fetched;
+        (TItem Item, FetchedMetadata Metadata, bool HadFailures) fetched;
         try
         {
             fetched = await _metadataFetcher.FetchMetadataAsync<TItem, TInfo>(
@@ -75,7 +75,9 @@ public class MetadataResolver(
             return;
         }
 
-        var metadata = Metadata.FromFetched(itemId, fetched.Metadata).ToStored(locale, _timeProvider.GetUtcNow());
+        var addedAt = new DateTimeOffset(DateTime.SpecifyKind(fetched.Item.DateCreated, DateTimeKind.Utc));
+        var metadata = Metadata.FromFetched(itemId, fetched.Metadata)
+            .ToStored(locale, _timeProvider.GetUtcNow(), addedAt);
         if (fetched.HadFailures)
         {
             // A failed provider might have had the missing fields, so keep the ones already stored.

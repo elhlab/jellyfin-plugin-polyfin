@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.Polyfin.Database.Metadata;
 using Jellyfin.Plugin.Polyfin.Models;
 using Jellyfin.Plugin.Polyfin.Services;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Data.Sqlite;
@@ -48,7 +49,19 @@ public sealed class MetadataResolverTests : IDisposable
         await RefreshMovieAsync(Samples.ItemId);
 
         Assert.Equal(now, _store.Get(Samples.ItemId, Samples.German)?.RefreshedAt);
-        Assert.Equal(now, _store.Get(Samples.ItemId, Samples.German)?.CreatedAt);
+    }
+
+    [Fact]
+    public async Task AddedAt_ComesFromItem()
+    {
+        var added = new DateTime(2020, 3, 4, 5, 6, 7, DateTimeKind.Utc);
+        _fetcher.Item = new Movie { DateCreated = added };
+        _timeProvider.SetUtcNow(Samples.RefreshedAt.AddDays(1));
+        _fetcher.Result = Samples.FullFetched;
+
+        await RefreshMovieAsync(Samples.ItemId);
+
+        Assert.Equal(new DateTimeOffset(added), _store.Get(Samples.ItemId, Samples.German)?.AddedAt);
     }
 
     [Fact]
@@ -232,6 +245,8 @@ public sealed class MetadataResolverTests : IDisposable
     // Returns the configured result, or throws as if the item is missing, instead of calling real providers.
     private sealed class FakeFetcher() : MetadataFetcher(null!, null!, null!)
     {
+        public Movie Item { get; set; } = new Movie();
+
         public FetchedMetadata Result { get; set; } = Samples.EmptyFetched;
 
         public bool HadFailures { get; set; }
@@ -240,7 +255,7 @@ public sealed class MetadataResolverTests : IDisposable
 
         public int Calls { get; private set; }
 
-        public override Task<(FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(
+        public override Task<(TItem Item, FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(
             Guid itemId, Locale? locale, CancellationToken cancellationToken)
         {
             Calls++;
@@ -250,7 +265,7 @@ public sealed class MetadataResolverTests : IDisposable
                 throw new FetchItemNotFoundException("Item not found");
             }
 
-            return Task.FromResult((Result, HadFailures));
+            return Task.FromResult(((TItem)(BaseItem)Item, Result, HadFailures));
         }
     }
 }

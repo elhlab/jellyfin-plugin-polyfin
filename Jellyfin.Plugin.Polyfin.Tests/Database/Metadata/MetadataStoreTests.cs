@@ -26,7 +26,7 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void Replace_OverwritesAllButCreatedAt()
+    public void Replace_OverwritesAllButAddedAt()
     {
         var updated = new StoredMetadata(
             Samples.ItemId,
@@ -41,16 +41,16 @@ public sealed class MetadataStoreTests : IDisposable
         _store.Replace(Samples.FullStored);
         _store.Replace(updated);
 
-        Assert.Equal(updated with { CreatedAt = Samples.CreatedAt }, _store.Get(updated.Guid, Samples.German));
+        Assert.Equal(updated with { AddedAt = Samples.AddedAt }, _store.Get(updated.Guid, Samples.German));
     }
 
     [Fact]
-    public void Replace_KeepsCreatedAt()
+    public void Replace_KeepsAddedAt()
     {
         _store.Replace(Samples.FullStored);
-        _store.Replace(Samples.FullStored with { CreatedAt = Samples.CreatedAt.AddDays(5) });
+        _store.Replace(Samples.FullStored with { AddedAt = Samples.AddedAt.AddDays(5) });
 
-        Assert.Equal(Samples.FullStored.CreatedAt, _store.Get(Samples.ItemId, Samples.German)?.CreatedAt);
+        Assert.Equal(Samples.FullStored.AddedAt, _store.Get(Samples.ItemId, Samples.German)?.AddedAt);
     }
 
     [Fact]
@@ -67,16 +67,16 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void Fill_KeepsCreatedAt()
+    public void Fill_KeepsAddedAt()
     {
         _store.Replace(Samples.FullStored);
-        _store.Fill(Samples.FullStored with { CreatedAt = Samples.CreatedAt.AddDays(5) });
+        _store.Fill(Samples.FullStored with { AddedAt = Samples.AddedAt.AddDays(5) });
 
-        Assert.Equal(Samples.FullStored.CreatedAt, _store.Get(Samples.ItemId, Samples.German)?.CreatedAt);
+        Assert.Equal(Samples.FullStored.AddedAt, _store.Get(Samples.ItemId, Samples.German)?.AddedAt);
     }
 
     [Fact]
-    public void Fill_UpdatesAllButCreatedAt()
+    public void Fill_UpdatesAllButAddedAt()
     {
         var updated = new StoredMetadata(
             Samples.ItemId,
@@ -91,7 +91,7 @@ public sealed class MetadataStoreTests : IDisposable
         _store.Replace(Samples.FullStored);
         _store.Fill(updated);
 
-        Assert.Equal(updated with { CreatedAt = Samples.CreatedAt }, _store.Get(Samples.ItemId, Samples.German));
+        Assert.Equal(updated with { AddedAt = Samples.AddedAt }, _store.Get(Samples.ItemId, Samples.German));
     }
 
     [Fact]
