@@ -245,7 +245,7 @@ public sealed class MetadataResolverTests : IDisposable
     // Returns the configured result, or throws as if the item is missing, instead of calling real providers.
     private sealed class FakeFetcher() : MetadataFetcher(null!, null!, null!)
     {
-        public Movie Item { get; set; } = new Movie();
+        public BaseItem Item { get; set; } = new Movie();
 
         public FetchedMetadata Result { get; set; } = Samples.EmptyFetched;
 
@@ -265,7 +265,7 @@ public sealed class MetadataResolverTests : IDisposable
                 throw new FetchItemNotFoundException("Item not found");
             }
 
-            return Task.FromResult(((TItem)(BaseItem)Item, Result, HadFailures));
+            return Task.FromResult(((TItem)Item, Result, HadFailures));
         }
     }
 }
