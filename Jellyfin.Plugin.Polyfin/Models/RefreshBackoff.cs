@@ -14,6 +14,11 @@ public static class RefreshBackoff
     private const int CompleteWaitMultiplier = 2;
 
     /// <summary>
+    /// The shortest time an item waits between refreshes.
+    /// </summary>
+    private static readonly TimeSpan _minimumWait = TimeSpan.FromHours(1);
+
+    /// <summary>
     /// How long to wait since the last refresh, by item age. Ordered from youngest to oldest.
     /// An item exactly at an age limit falls in the next step, and the last step covers every older item.
     /// </summary>
@@ -56,6 +61,11 @@ public static class RefreshBackoff
         if (completeness == Completeness.Complete)
         {
             wait *= CompleteWaitMultiplier;
+        }
+
+        if (wait < _minimumWait)
+        {
+            wait = _minimumWait;
         }
 
         return metadata.RefreshedAt + wait;

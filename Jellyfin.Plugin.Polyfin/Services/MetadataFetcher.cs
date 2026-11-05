@@ -30,7 +30,7 @@ public class MetadataFetcher(ILibraryManager libraryManager, IProviderManager pr
     /// </param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>
-    /// The item, the merged metadata, empty if no provider returned metadata in the requested language,
+    /// The item, its merged metadata (empty if no provider returned metadata in the requested language),
     /// and whether any provider failed or timed out.
     /// </returns>
     /// <exception cref="FetchItemNotFoundException">
