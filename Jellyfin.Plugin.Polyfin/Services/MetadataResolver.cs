@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,16 +20,6 @@ public class MetadataResolver(
     TimeProvider timeProvider,
     ILogger<MetadataResolver> logger)
 {
-    /// <summary>
-    /// How long complete metadata is kept before it is refreshed.
-    /// </summary>
-    internal static readonly TimeSpan CompleteRefreshAge = TimeSpan.FromDays(14);
-
-    /// <summary>
-    /// How long incomplete metadata is kept before it is fetched again.
-    /// </summary>
-    internal static readonly TimeSpan IncompleteRefreshAge = TimeSpan.FromDays(3);
-
     private readonly MetadataStore _metadataStore = metadataStore;
     private readonly MetadataFetcher _metadataFetcher = metadataFetcher;
     private readonly TimeProvider _timeProvider = timeProvider;
@@ -67,7 +56,7 @@ public class MetadataResolver(
             return;
         }
 
-        (FetchedMetadata Metadata, bool HadFailures) fetched;
+        (TItem Item, FetchedMetadata Metadata, bool HadFailures) fetched;
         try
         {
             fetched = await _metadataFetcher.FetchMetadataAsync<TItem, TInfo>(
@@ -86,7 +75,9 @@ public class MetadataResolver(
             return;
         }
 
-        var metadata = Metadata.FromFetched(itemId, fetched.Metadata).ToStored(locale, _timeProvider.GetUtcNow());
+        var addedAt = new DateTimeOffset(DateTime.SpecifyKind(fetched.Item.DateCreated, DateTimeKind.Utc));
+        var metadata = Metadata.FromFetched(itemId, fetched.Metadata)
+            .ToStored(locale, _timeProvider.GetUtcNow(), addedAt);
         if (fetched.HadFailures)
         {
             // A failed provider might have had the missing fields, so keep the ones already stored.
@@ -137,10 +128,7 @@ public class MetadataResolver(
     /// </summary>
     /// <param name="stored">The stored metadata, or <see langword="null"/> if none is stored.</param>
     /// <returns>True if nothing is stored, or the stored metadata is due for a refresh.</returns>
-    /// <remarks>
-    /// Full metadata is never refreshed, complete metadata is refreshed after <see cref="CompleteRefreshAge"/>,
-    /// and incomplete metadata after <see cref="IncompleteRefreshAge"/>.
-    /// </remarks>
+    /// <remarks>See <see cref="RefreshBackoff.GetRefreshTime"/> for when stored metadata is due.</remarks>
     public bool NeedsRefresh(StoredMetadata? stored)
     {
         if (stored is null)
@@ -148,23 +136,13 @@ public class MetadataResolver(
             return true;
         }
 
-        var completeness = stored.GetCompleteness();
-
-        // TODO: Back off refreshes over time.
-        // TODO: Make the refresh ages configurable in advanced settings.
         var now = _timeProvider.GetUtcNow();
-        return completeness switch
+        var refreshAfter = RefreshBackoff.GetRefreshTime(stored, now);
+        if (refreshAfter is null)
         {
-            // Rescanning could catch metadata changes over time, but isn't worth
-            // supporting right now. Users can force an update per item if needed.
-            Completeness.Full => false,
+            return false;
+        }
 
-            Completeness.Complete => now - stored.RefreshedAt >= CompleteRefreshAge,
-
-            Completeness.Incomplete => now - stored.RefreshedAt >= IncompleteRefreshAge,
-
-            _ => throw new UnreachableException(
-                $"Completeness {completeness} has no refresh rule."),
-        };
+        return now >= refreshAfter;
     }
 }

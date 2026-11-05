@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.Polyfin.Database.Metadata;
 using Jellyfin.Plugin.Polyfin.Models;
 using Jellyfin.Plugin.Polyfin.Services;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Data.Sqlite;
@@ -51,6 +52,19 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
+    public async Task AddedAt_ComesFromItem()
+    {
+        var added = new DateTime(2020, 3, 4, 5, 6, 7, DateTimeKind.Utc);
+        _fetcher.Item = new Movie { DateCreated = added };
+        _timeProvider.SetUtcNow(Samples.RefreshedAt.AddDays(1));
+        _fetcher.Result = Samples.FullFetched;
+
+        await RefreshMovieAsync(Samples.ItemId);
+
+        Assert.Equal(new DateTimeOffset(added), _store.Get(Samples.ItemId, Samples.German)?.AddedAt);
+    }
+
+    [Fact]
     public async Task MissingTranslation_StoresEmptyMetadata()
     {
         _fetcher.Result = Samples.EmptyFetched;
@@ -79,7 +93,7 @@ public sealed class MetadataResolverTests : IDisposable
         await RefreshMovieAsync(Samples.ItemId);
         Assert.Equal(0, _fetcher.Calls);
 
-        _timeProvider.Advance(MetadataResolver.CompleteRefreshAge);
+        _timeProvider.Advance(TimeSpan.FromDays(1000));
         await RefreshMovieAsync(Samples.ItemId);
         Assert.Equal(1, _fetcher.Calls);
     }
@@ -167,21 +181,32 @@ public sealed class MetadataResolverTests : IDisposable
     }
 
     [Fact]
-    public void FilterItemsToRefresh_ReturnsItemsThatNeedRefreshing()
+    public void FilterItemsToRefresh_ReturnsDueAndUnstoredItems()
     {
         var now = _timeProvider.GetUtcNow();
         var full = Samples.FullStored with { Guid = Guid.NewGuid() };
-        var recent = Samples.CompleteStored with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge - TimeSpan.FromDays(1)) };
-        var old = Samples.CompleteStored with { Guid = Guid.NewGuid(), RefreshedAt = now - (MetadataResolver.CompleteRefreshAge + TimeSpan.FromDays(1)) };
-        Guid newId = Guid.NewGuid();
-        Guid[] itemIds = [full.Guid, recent.Guid, old.Guid, newId];
+        var fresh = Samples.CompleteStored with { Guid = Guid.NewGuid(), RefreshedAt = now };
+        var due = Samples.CompleteStored with { Guid = Guid.NewGuid(), RefreshedAt = now - TimeSpan.FromDays(1000) };
+        var unstoredId = Guid.NewGuid();
 
         _store.Replace(full);
-        _store.Replace(recent);
-        _store.Replace(old);
+        _store.Replace(fresh);
+        _store.Replace(due);
 
-        Assert.Equivalent(new[] { old.Guid, newId }, _resolver.FilterItemsToRefresh(itemIds, Samples.German), strict: true);
-        Assert.Equivalent(itemIds, _resolver.FilterItemsToRefresh(itemIds, Samples.French), strict: true);
+        var toRefresh = _resolver.FilterItemsToRefresh([full.Guid, fresh.Guid, due.Guid, unstoredId], Samples.German);
+
+        Assert.Equivalent(new[] { due.Guid, unstoredId }, toRefresh, strict: true);
+    }
+
+    [Fact]
+    public void FilterItemsToRefresh_OnlyChecksGivenLocale()
+    {
+        var longAgo = _timeProvider.GetUtcNow() - TimeSpan.FromDays(1000);
+        _store.Replace(Samples.EmptyStored with { Locale = Samples.French, RefreshedAt = longAgo });
+        _store.Replace(Samples.FullStored);
+
+        Assert.Empty(_resolver.FilterItemsToRefresh([Samples.ItemId], Samples.German));
+        Assert.Equal([Samples.ItemId], _resolver.FilterItemsToRefresh([Samples.ItemId], Samples.French));
     }
 
     [Fact]
@@ -196,28 +221,6 @@ public sealed class MetadataResolverTests : IDisposable
         var now = _timeProvider.GetUtcNow();
 
         Assert.False(_resolver.NeedsRefresh(Samples.FullStored with { RefreshedAt = now - TimeSpan.FromDays(10000) }));
-    }
-
-    [Fact]
-    public void CompleteRow_NeedsRefreshAfterRefreshAge()
-    {
-        var now = _timeProvider.GetUtcNow();
-        var recentTime = now - (MetadataResolver.CompleteRefreshAge - TimeSpan.FromMinutes(1));
-        var oldTime = now - (MetadataResolver.CompleteRefreshAge + TimeSpan.FromMinutes(1));
-
-        Assert.False(_resolver.NeedsRefresh(Samples.CompleteStored with { RefreshedAt = recentTime }));
-        Assert.True(_resolver.NeedsRefresh(Samples.CompleteStored with { RefreshedAt = oldTime }));
-    }
-
-    [Fact]
-    public void IncompleteRow_NeedsRefreshAfterRefreshAge()
-    {
-        var now = _timeProvider.GetUtcNow();
-        var recentTime = now - (MetadataResolver.IncompleteRefreshAge - TimeSpan.FromMinutes(1));
-        var oldTime = now - (MetadataResolver.IncompleteRefreshAge + TimeSpan.FromMinutes(1));
-
-        Assert.False(_resolver.NeedsRefresh(Samples.EmptyStored with { RefreshedAt = recentTime }));
-        Assert.True(_resolver.NeedsRefresh(Samples.EmptyStored with { RefreshedAt = oldTime }));
     }
 
     [Fact]
@@ -242,6 +245,8 @@ public sealed class MetadataResolverTests : IDisposable
     // Returns the configured result, or throws as if the item is missing, instead of calling real providers.
     private sealed class FakeFetcher() : MetadataFetcher(null!, null!, null!)
     {
+        public BaseItem Item { get; set; } = new Movie();
+
         public FetchedMetadata Result { get; set; } = Samples.EmptyFetched;
 
         public bool HadFailures { get; set; }
@@ -250,7 +255,7 @@ public sealed class MetadataResolverTests : IDisposable
 
         public int Calls { get; private set; }
 
-        public override Task<(FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(
+        public override Task<(TItem Item, FetchedMetadata Metadata, bool HadFailures)> FetchMetadataAsync<TItem, TInfo>(
             Guid itemId, Locale? locale, CancellationToken cancellationToken)
         {
             Calls++;
@@ -260,7 +265,7 @@ public sealed class MetadataResolverTests : IDisposable
                 throw new FetchItemNotFoundException("Item not found");
             }
 
-            return Task.FromResult((Result, HadFailures));
+            return Task.FromResult(((TItem)Item, Result, HadFailures));
         }
     }
 }
